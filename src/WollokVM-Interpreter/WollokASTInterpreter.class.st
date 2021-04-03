@@ -19,6 +19,17 @@ WollokASTInterpreter >> addBindingOfClass: aName fromString: aString [
 	WollokReducedLoader new addBindingOfClass: aName fromString: aString in: self
 ]
 
+{ #category : #visiting }
+WollokASTInterpreter >> asWollokBoolean: aPharoBoolean [
+	
+	^ aPharoBoolean
+		ifTrue: [ WollokTrue new ]
+		ifFalse: [ | boolean |
+			boolean := WollokFalse new.
+			boolean interpreter: self.
+			boolean ]
+]
+
 { #category : #interpreting }
 WollokASTInterpreter >> initialize [
 
@@ -42,7 +53,13 @@ WollokASTInterpreter >> interpretProgram: aFileNode [
 { #category : #testing }
 WollokASTInterpreter >> isFalse: aWollokObject [
 
-	^ aWollokObject = false
+	^ aWollokObject isWollokFalse
+]
+
+{ #category : #testing }
+WollokASTInterpreter >> isTrue: aWollokObject [
+
+	^ aWollokObject isWollokTrue
 ]
 
 { #category : #bindings }
@@ -64,6 +81,9 @@ WollokASTInterpreter >> visitBinaryOperation: aBinaryOperation [
 	
 	aBinaryOperation operation value = '||'
 		ifTrue: [ ^ leftResult | rightResult ].
+		
+	aBinaryOperation operation value = '==='
+		ifTrue: [ ^ leftResult wollokIdenticalTo: rightResult ].
 	
 	self notYetImplemented
 ]
@@ -71,7 +91,7 @@ WollokASTInterpreter >> visitBinaryOperation: aBinaryOperation [
 { #category : #visiting }
 WollokASTInterpreter >> visitBooleanLiteral: aWollokBooleanLiteralNode [
 	
-	^ aWollokBooleanLiteralNode value value = 'true'
+	^ self asWollokBoolean: aWollokBooleanLiteralNode value value = 'true'
 ]
 
 { #category : #visiting }
