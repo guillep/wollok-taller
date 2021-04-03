@@ -39,10 +39,39 @@ WollokASTInterpreter >> interpretProgram: aFileNode [
 	^ lastValue	
 ]
 
+{ #category : #testing }
+WollokASTInterpreter >> isFalse: aWollokObject [
+
+	^ aWollokObject = false
+]
+
 { #category : #bindings }
 WollokASTInterpreter >> resolve: aString [ 
 	
 	^ bindings at: aString
+]
+
+{ #category : #visiting }
+WollokASTInterpreter >> visitBinaryOperation: aBinaryOperation [
+
+	| leftResult rightResult |
+
+	leftResult := aBinaryOperation leftOperand acceptVisitor: self.	
+	rightResult := aBinaryOperation rightOperand acceptVisitor: self.
+	
+	aBinaryOperation operation value = '&&'
+		ifTrue: [ ^ leftResult & rightResult ].
+	
+	aBinaryOperation operation value = '||'
+		ifTrue: [ ^ leftResult | rightResult ].
+	
+	self notYetImplemented
+]
+
+{ #category : #visiting }
+WollokASTInterpreter >> visitBooleanLiteral: aWollokBooleanLiteralNode [
+	
+	^ aWollokBooleanLiteralNode value value = 'true'
 ]
 
 { #category : #visiting }
