@@ -7,6 +7,19 @@ Class {
 	#category : #'WollokVM-Interpreter'
 }
 
+{ #category : #visiting }
+WollokASTInterpreter >> activateMethod: method withReceiver: receiver withArguments: arguments [
+
+	method	 isNative ifTrue: [
+		"Manejar caso nativo"
+		...
+		^ self
+	].
+
+	"Manejar el caso de la ejecución normal con manejo de pila"
+	^ method acceptVisitor: self
+]
+
 { #category : #bindings }
 WollokASTInterpreter >> addBinding: aName value: aWollokVMClass [ 
 	
@@ -92,6 +105,17 @@ WollokASTInterpreter >> visitBinaryOperation: aBinaryOperation [
 WollokASTInterpreter >> visitBooleanLiteral: aWollokBooleanLiteralNode [
 	
 	^ self asWollokBoolean: aWollokBooleanLiteralNode value value = 'true'
+]
+
+{ #category : #visiting }
+WollokASTInterpreter >> visitMemberFeatureCall: aWollokMemberFeatureCallNode [ 
+	
+	| receiver arguments method |
+	receiver := aWollokMemberFeatureCallNode receiver acceptVisitor: self.
+	arguments := aWollokMemberFeatureCallNode arguments collect: [ :each |
+		each acceptVisitor: self ].
+	method := self lookup: aWollokMemberFeatureCallNode feature value in: receiver wollokClass.
+	^ self activateMethod: method withReceiver: receiver withArguments: arguments
 ]
 
 { #category : #visiting }
