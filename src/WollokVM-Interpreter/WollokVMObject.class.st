@@ -2,7 +2,9 @@ Class {
 	#name : #WollokVMObject,
 	#superclass : #Object,
 	#instVars : [
-		'wollokClass'
+		'wollokClass',
+		'interpreter',
+		'instanceVariables'
 	],
 	#category : #'WollokVM-Interpreter'
 }
@@ -23,10 +25,26 @@ WollokVMObject >> gtInspectorVariablesIn: composite [
 ]
 
 { #category : #accessing }
+WollokVMObject >> initialize [
+
+	super initialize.
+	instanceVariables := Dictionary new.
+]
+
+{ #category : #accessing }
 WollokVMObject >> instanceVariablesValues [
 
-	self flag: #todo.
-	^ #()
+	^ instanceVariables values
+]
+
+{ #category : #accessing }
+WollokVMObject >> interpreter [
+	^ interpreter
+]
+
+{ #category : #accessing }
+WollokVMObject >> interpreter: anObject [
+	interpreter := anObject
 ]
 
 { #category : #printing }
@@ -66,4 +84,22 @@ WollokVMObject >> wollokClass: anObject [
 WollokVMObject >> wollokClassName [
 	
 	^ wollokClass name
+]
+
+{ #category : #native }
+WollokVMObject >> wollokIdentity [
+	
+	self subclassResponsibility
+]
+
+{ #category : #'object-access' }
+WollokVMObject >> wollokInstanceVariableAt: anIndex [ 
+	
+	^ instanceVariables at: anIndex ifAbsent: [ interpreter nullObject ]
+]
+
+{ #category : #'object-access' }
+WollokVMObject >> wollokInstanceVariableAt: anIndex put: aValue [
+	
+	instanceVariables at: anIndex put: aValue
 ]

@@ -1,21 +1,8 @@
 Class {
 	#name : #WollokFalse,
-	#superclass : #Object,
-	#instVars : [
-		'interpreter'
-	],
+	#superclass : #WollokVMObject,
 	#category : #'WollokVM-Interpreter'
 }
-
-{ #category : #accessing }
-WollokFalse >> interpreter [
-	^ interpreter
-]
-
-{ #category : #accessing }
-WollokFalse >> interpreter: anObject [
-	interpreter := anObject
-]
 
 { #category : #'logical operations' }
 WollokFalse >> isWollokFalse [
@@ -29,10 +16,22 @@ WollokFalse >> isWollokTrue [
 	^ false
 ]
 
+{ #category : #accessing }
+WollokFalse >> literalValue [
+	
+	^ false
+]
+
 { #category : #operators }
 WollokFalse >> wollokIdenticalTo: anotherWollokObject [
 
 	^ interpreter asWollokBoolean: anotherWollokObject isWollokFalse
+]
+
+{ #category : #native }
+WollokFalse >> wollokIdentity [
+	
+	^ interpreter asWollokNumber: false identityHash
 ]
 
 { #category : #'logical operations' }

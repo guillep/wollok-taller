@@ -7,23 +7,23 @@ Class {
 { #category : #'as yet unclassified' }
 WollokReducedLoader >> addBindingOfClass: aName fromString: aString in: anInterpreter [
 
-	| anAST aWollokClass |
-	
-	anAST := WollokParser parse: aString.
-	anAST attributeNamed: #source put: aString.
-
-	aWollokClass := WollokVMClass new
-		name: aName;
-		ast: anAST;
-		yourself.
-	
-	anInterpreter addBinding: aName value: aWollokClass.
+	anInterpreter addBindingOfClass: aName fromString: aString.
 ]
 
 { #category : #'as yet unclassified' }
 WollokReducedLoader >> addBindingOfClass: aName of: selector in: anInterpreter [
 
 	self addBindingOfClass: aName fromString: (self perform: selector) in: anInterpreter 
+]
+
+{ #category : #parsing }
+WollokReducedLoader >> astOfClassNamed: aString [ 
+	
+	| file fullyQualifiedName selector |
+	fullyQualifiedName := 'wollok.lang.', aString.
+	selector := ('' join: ((fullyQualifiedName substrings: '.') collect: #capitalized)) uncapitalized asSymbol.
+	file := WollokParser parse: (self perform: selector).
+	^ file elements first
 ]
 
 { #category : #'as yet unclassified' }

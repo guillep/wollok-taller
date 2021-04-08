@@ -43,6 +43,15 @@ WollokASTInterpreter >> asWollokBoolean: aPharoBoolean [
 			boolean ]
 ]
 
+{ #category : #literals }
+WollokASTInterpreter >> asWollokNumber: anInteger [ 
+
+	^ WollokVMLiteral new
+		wollokClass: (self resolve: 'wollok.lang.Number');
+		literalValue: anInteger;
+		yourself
+]
+
 { #category : #interpreting }
 WollokASTInterpreter >> initialize [
 
@@ -121,14 +130,5 @@ WollokASTInterpreter >> visitMemberFeatureCall: aWollokMemberFeatureCallNode [
 { #category : #visiting }
 WollokASTInterpreter >> visitNumberLiteral: aWollokNumberLiteralNode [ 
 
-	^ self wollokNumberFrom: aWollokNumberLiteralNode numberValue
-]
-
-{ #category : #literals }
-WollokASTInterpreter >> wollokNumberFrom: anInteger [ 
-
-	^ WollokVMLiteral new
-		wollokClass: (self resolve: 'wollok.lang.Number');
-		literalValue: anInteger;
-		yourself
+	^ self asWollokNumber: aWollokNumberLiteralNode numberValue
 ]

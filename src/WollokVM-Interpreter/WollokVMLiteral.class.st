@@ -8,6 +8,18 @@ Class {
 }
 
 { #category : #accessing }
+WollokVMLiteral >> = aLiteral [
+
+	^ literalValue = aLiteral literalValue
+]
+
+{ #category : #accessing }
+WollokVMLiteral >> hash [
+
+	^ literalValue hash
+]
+
+{ #category : #accessing }
 WollokVMLiteral >> literalValue [
 	
 	^ literalValue

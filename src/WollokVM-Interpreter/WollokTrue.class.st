@@ -1,6 +1,6 @@
 Class {
 	#name : #WollokTrue,
-	#superclass : #Object,
+	#superclass : #WollokVMObject,
 	#category : #'WollokVM-Interpreter'
 }
 
@@ -19,6 +19,12 @@ WollokTrue >> isWollokFalse [
 { #category : #'logical operations' }
 WollokTrue >> isWollokTrue [
 
+	^ true
+]
+
+{ #category : #accessing }
+WollokTrue >> literalValue [
+	
 	^ true
 ]
 

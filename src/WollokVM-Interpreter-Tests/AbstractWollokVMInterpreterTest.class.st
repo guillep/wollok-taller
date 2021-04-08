@@ -16,7 +16,7 @@ AbstractWollokVMInterpreterTest class >> isAbstract [
 { #category : #running }
 AbstractWollokVMInterpreterTest >> interpretExpression: aString [
 
-	^ interpreter interpretProgram: (self parse: (self wrapForREPL: aString))
+	^ interpreter interpretProgram: (interpreter compile: (self parse: (self wrapForREPL: aString)))
 ]
 
 { #category : #parsing }
@@ -32,7 +32,7 @@ AbstractWollokVMInterpreterTest >> parse: aString [
 { #category : #running }
 AbstractWollokVMInterpreterTest >> setUp [
 
-	interpreter := WollokASTInterpreter new		
+	interpreter := WollokBytecodeInterpreter new		
 
 ]
 
