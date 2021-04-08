@@ -14,7 +14,7 @@ Class {
 { #category : #accessing }
 WKBytecodeClass >> addMethod: aWKBytecodeMethod [ 
 	
-	methods at: aWKBytecodeMethod selector put: aWKBytecodeMethod
+	methods at: aWKBytecodeMethod selector literalValue asSymbol put: aWKBytecodeMethod
 ]
 
 { #category : #accessing }
@@ -59,7 +59,7 @@ WKBytecodeClass >> decodeMethodFrom: aReadStream [
 WKBytecodeClass >> finishLoadingIn: aWollokBytecodeInterpreter [ 
 	
 	self superclassName ifNil: [ ^ nil ].
-	superclass := aWollokBytecodeInterpreter resolve: 'wollok.lang.', self superclassName literalValue
+	superclass := aWollokBytecodeInterpreter resolve: self superclassName literalValue
 ]
 
 { #category : #accessing }

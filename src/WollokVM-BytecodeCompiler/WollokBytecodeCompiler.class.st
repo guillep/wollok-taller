@@ -179,8 +179,9 @@ WollokBytecodeCompiler >> visitClass: aWollokClassNode [
 	superclass := aWollokClassNode name value ~= 'Object' ifTrue: [
 		aWollokClassNode superclass
 			ifNil: [ 'Object' ]
-			ifNotNil: [ 1halt ].
-	].
+			ifNotNil: [ 
+				self assert: aWollokClassNode superclass identifiers size = 1.
+				aWollokClassNode superclass identifiers first value ] ].
 	builder addLiteral: superclass.
 
 	"Initializer of the variable declarations"
@@ -330,6 +331,17 @@ WollokBytecodeCompiler >> visitSelf: aWollokSelfNode [
 WollokBytecodeCompiler >> visitStringLiteral: aWollokStringLiteralNode [ 
 	
 	builder pushLiteral: aWollokStringLiteralNode value value allButFirst allButLast
+]
+
+{ #category : #visiting }
+WollokBytecodeCompiler >> visitSuperInvocation: aWollokSuperInvocationNode [ 
+	
+	| messageName |
+	builder pushSelf.
+	aWollokSuperInvocationNode arguments do: [ :e |
+		e acceptVisitor: self ].
+	
+	builder superSend
 ]
 
 { #category : #visiting }

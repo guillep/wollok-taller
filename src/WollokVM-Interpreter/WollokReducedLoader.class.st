@@ -26,6 +26,22 @@ WollokReducedLoader >> astOfClassNamed: aString [
 	^ file elements first
 ]
 
+{ #category : #loading }
+WollokReducedLoader >> loadClassNamed: aName in: aWollokBytecodeInterpreter [ 
+
+	| anAST codeSymbol source |
+	codeSymbol := ('' join: ((aName substrings: '.') collect: #capitalized))
+		uncapitalized asSymbol.
+	source := self perform: codeSymbol.
+	anAST := WollokParser parse: source.
+	anAST attributeNamed: #source put: source.
+
+	^ WollokVMClass new
+		name: aName;
+		ast: anAST;
+		yourself.
+]
+
 { #category : #'as yet unclassified' }
 WollokReducedLoader >> loadInto: anInterpreter [
 

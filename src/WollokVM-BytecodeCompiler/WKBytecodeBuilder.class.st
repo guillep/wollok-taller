@@ -276,3 +276,9 @@ WKBytecodeBuilder >> send: aString numberOfArguments: numberOfArguments [
 		numberOfArguments: numberOfArguments;
 		yourself)
 ]
+
+{ #category : #instructions }
+WKBytecodeBuilder >> superSend [
+
+	instructions add: WKSuperSend new
+]

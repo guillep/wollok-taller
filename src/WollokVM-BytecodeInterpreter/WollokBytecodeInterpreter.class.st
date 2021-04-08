@@ -29,35 +29,19 @@ WollokBytecodeInterpreter >> activateMethod: aWKBytecodeMethod [
 	self createFrameForMethod: aWKBytecodeMethod.
 ]
 
-{ #category : #'as yet unclassified' }
-WollokBytecodeInterpreter >> addBinding: aString value: aWollokVMClass [ 
-	
-	| result wollokBytecodeClass |
-	result := self compile: aWollokVMClass ast.
-	
-	wollokBytecodeClass := WKBytecodeClass new.
-	wollokBytecodeClass interpreter: self.
-	wollokBytecodeClass name: aString.
-	
-	"Registering before loading to cut potential recursions"
-	bindings at: aString put: wollokBytecodeClass.
-	
-	self loadBytecode: result in: wollokBytecodeClass.
-]
-
 { #category : #loading }
 WollokBytecodeInterpreter >> addBindingOfClass: aName fromString: aString [
 
-	| anAST aWollokClass |
+	| anAST aWollokClass astclass |
 	anAST := WollokParser parse: aString.
 	anAST attributeNamed: #source put: aString.
 
-	aWollokClass := WollokVMClass new
+	astclass := WollokVMClass new
 		name: aName;
 		ast: anAST;
 		yourself.
 	
-	self addBinding: aName value: aWollokClass.
+	^ self compileAndInstall: astclass
 ]
 
 { #category : #'stack-management' }
@@ -229,12 +213,42 @@ WollokBytecodeInterpreter >> bytecodeSend [
 	self activateMethod: method.
 ]
 
+{ #category : #bytecode }
+WollokBytecodeInterpreter >> bytecodeSendSuper [
+	
+	| literalIndex selector numberOfArguments receiver method |
+	selector := self currentMethod selector.
+
+	receiver := self receiver.
+	method := self
+		lookup: selector
+		fromClass: self currentMethod bytecodeClass superclass.
+	self activateMethod: method.
+]
+
 { #category : #compiling }
 WollokBytecodeInterpreter >> compile: aWollokFileNode [ 
 	
 	^ WollokBytecodeCompiler new
 		loader: WollokReducedLoader new;
 		compile: aWollokFileNode
+]
+
+{ #category : #'name-resolution' }
+WollokBytecodeInterpreter >> compileAndInstall: astclass [
+
+	| bytecode wollokBytecodeClass |
+	bytecode := self compile: astclass ast.
+	
+	wollokBytecodeClass := WKBytecodeClass new.
+	wollokBytecodeClass interpreter: self.
+	wollokBytecodeClass name: astclass name.
+	
+	"Registering before loading to cut potential recursions"
+	bindings at: astclass name put: wollokBytecodeClass.
+	
+	self loadBytecode: bytecode in: wollokBytecodeClass.
+	^ wollokBytecodeClass
 ]
 
 { #category : #frames }
@@ -375,6 +389,7 @@ WollokBytecodeInterpreter >> initialize [
 	dispatchTable at: 13 put: #bytecodePopIntoInstanceVariable.
 	dispatchTable at: 14 put: #bytecodePushInstanceVariable.
 	dispatchTable at: 15 put: #bytecodeDup.
+	dispatchTable at: 16 put: #bytecodeSendSuper.
 	
 	selectorMappings := Dictionary new.
 	selectorMappings at: '-' put: 'minus'.
@@ -456,9 +471,15 @@ WollokBytecodeInterpreter >> loadBytecode: bytecode in: aWollokElement [
 ]
 
 { #category : #lookup }
+WollokBytecodeInterpreter >> lookup: aString fromClass: aWollokClass [
+
+	^ aWollokClass lookup: aString literalValue asSymbol
+]
+
+{ #category : #lookup }
 WollokBytecodeInterpreter >> lookup: aString withReceiver: aWollokObject [
 
-	^ aWollokObject wollokClass lookup: aString
+	^ aWollokObject wollokClass lookup: aString literalValue asSymbol
 ]
 
 { #category : #'well-known objects' }
@@ -501,16 +522,21 @@ WollokBytecodeInterpreter >> receiver [
 { #category : #'name-resolution' }
 WollokBytecodeInterpreter >> resolve: aString [
 	
+	| astclass |
 	"If already loaded, use it"
 	bindings at: aString ifPresent: [ :c | ^ c ].
 
 	"Otherwise, load it"
-	WollokReducedLoader new
-		addBindingOfClass: aString
-		of: ('' join: ((aString substrings: '.') collect: #capitalized)) uncapitalized asSymbol
-		in: self.
+	astclass := [
+		WollokReducedLoader new
+			loadClassNamed: aString
+			in: self ]
+		on: Error do: [ :err |
+		WollokReducedLoader new
+			loadClassNamed: 'wollok.lang.', aString
+			in: self	].
 	
-	^ bindings at: aString
+	^ self compileAndInstall: astclass
 ]
 
 { #category : #'stack-access' }
