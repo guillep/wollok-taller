@@ -130,6 +130,19 @@ WollokBytecodeInterpreter >> bytecodeNew [
 ]
 
 { #category : #bytecode }
+WollokBytecodeInterpreter >> bytecodeNewList [
+	
+	| class newList |
+	class := self resolve: 'wollok.lang.List'.
+	newList := WollokVMLiteral new
+		wollokClass: class;
+		interpreter: self;
+		literalValue: OrderedCollection new;
+		yourself.
+	self push: newList
+]
+
+{ #category : #bytecode }
 WollokBytecodeInterpreter >> bytecodePop [
 	
 	self pop
@@ -153,6 +166,16 @@ WollokBytecodeInterpreter >> bytecodePopIntoTemporary [
 	value := temporaryIndex <= self currentMethod numberOfParameters
 		ifTrue: [ self argumentAt: temporaryIndex put: value ]
 		ifFalse: [ self halt: 'ivar?' ]
+]
+
+{ #category : #bytecode }
+WollokBytecodeInterpreter >> bytecodePushGlobal [
+	
+	| literalIndex globalName |
+	literalIndex := self fetchNextBytecode.
+	globalName := (self literalAt: literalIndex) literalValue asSymbol.
+	
+	self push: (bindings at: globalName)
 ]
 
 { #category : #bytecode }
@@ -237,10 +260,14 @@ WollokBytecodeInterpreter >> compile: aWollokFileNode [
 { #category : #'name-resolution' }
 WollokBytecodeInterpreter >> compileAndInstall: astclass [
 
-	| bytecode wollokBytecodeClass |
+	| bytecode wollokBytecodeClass behaviourClass |
 	bytecode := self compile: astclass ast.
 	
-	wollokBytecodeClass := WKBytecodeClass new.
+	behaviourClass := bytecode first = 2
+		ifTrue: [ WKBytecodeClass ]
+		ifFalse: [ WKBytecodeObject ].
+	
+	wollokBytecodeClass := behaviourClass new.
 	wollokBytecodeClass interpreter: self.
 	wollokBytecodeClass name: astclass name.
 	
@@ -350,6 +377,11 @@ WollokBytecodeInterpreter >> fetchNextBytecode [
 	^ bytecode
 ]
 
+{ #category : #accessing }
+WollokBytecodeInterpreter >> framePointer [
+	^ framePointer
+]
+
 { #category : #initialization }
 WollokBytecodeInterpreter >> initialize [
 
@@ -390,6 +422,8 @@ WollokBytecodeInterpreter >> initialize [
 	dispatchTable at: 14 put: #bytecodePushInstanceVariable.
 	dispatchTable at: 15 put: #bytecodeDup.
 	dispatchTable at: 16 put: #bytecodeSendSuper.
+	dispatchTable at: 17 put: #bytecodeNewList.
+	dispatchTable at: 18 put: #bytecodePushGlobal.
 	
 	selectorMappings := Dictionary new.
 	selectorMappings at: '-' put: 'minus'.
@@ -408,11 +442,7 @@ WollokBytecodeInterpreter >> initialize [
 { #category : #interpreting }
 WollokBytecodeInterpreter >> interpretLoop [
 	
-	| bytecode |
-	[ framePointer > 0 ] whileTrue: [ 
-		bytecode := self fetchNextBytecode.
-		self dispatchBytecode: bytecode.
-	]
+	self interpretUntilReturn: -1 "sentinel frame pointer"
 ]
 
 { #category : #interpreting }
@@ -429,6 +459,16 @@ WollokBytecodeInterpreter >> interpretProgram: bytecodes [
 	self createFrameForMethod: program.
 	self interpretLoop.
 	^ self pop
+]
+
+{ #category : #interpreting }
+WollokBytecodeInterpreter >> interpretUntilReturn: parentFrame [
+	
+	[ framePointer > parentFrame ] whileTrue: [ 
+		| bytecode |
+		bytecode := self fetchNextBytecode.
+		self dispatchBytecode: bytecode.
+	]
 ]
 
 { #category : #testing }
@@ -462,7 +502,7 @@ WollokBytecodeInterpreter >> loadBytecode: bytecode in: aWollokElement [
 	literals := OrderedCollection new.
 	bytecode readStreamDo: [ :stream | | type |
 		type := stream next.
-		self assert: type <= 2 "program or class for now.".
+		self assert: type <= 3 "program, class or object for now.".
 		(1 to: stream next) collect: [ :i | 
 			literals add: (self decodeLiteralFrom: stream) ].
 		aWollokElement literals: literals.
@@ -520,6 +560,12 @@ WollokBytecodeInterpreter >> receiver [
 		- 1 "Go back by 1 to get the receiver"
 ]
 
+{ #category : #globals }
+WollokBytecodeInterpreter >> registerGlobal: aWollokVMObject atName: aString [ 
+	
+	bindings at: aString asSymbol put: aWollokVMObject
+]
+
 { #category : #'name-resolution' }
 WollokBytecodeInterpreter >> resolve: aString [
 	
@@ -567,6 +613,35 @@ WollokBytecodeInterpreter >> wollok_lang_Boolean__or [
 	boolean1 := self pop.
 	boolean2 := self pop.
 	self push: (self asWollokBoolean: (boolean1 literalValue | boolean2 literalValue))
+]
+
+{ #category : #'as yet unclassified' }
+WollokBytecodeInterpreter >> wollok_lang_List__add [
+	
+	| added receiver |
+	added := self pop.
+	receiver := self pop.
+	
+	receiver literalValue add: added.
+	self push: added
+]
+
+{ #category : #'native methods' }
+WollokBytecodeInterpreter >> wollok_lang_List__contains [
+	
+	| tested list |
+	tested := self pop.
+	list := self pop.
+	
+	self push: (self asWollokBoolean: (list literalValue includes: tested))
+]
+
+{ #category : #'native methods' }
+WollokBytecodeInterpreter >> wollok_lang_List__size [
+	
+	| list |
+	list := self pop.
+	self push: (self asWollokNumber: list literalValue size)
 ]
 
 { #category : #'native methods' }

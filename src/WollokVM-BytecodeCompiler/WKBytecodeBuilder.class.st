@@ -39,7 +39,7 @@ WKBytecodeBuilder >> bytecode [
 
 	"Bytecode format:
 	
-	Type (1=program, 2=module, 3=test)
+	Type (1=program, 2=module, 3=object)
 	# of Literals, variable sized literals, encoding each its size
 	Literal1
 	...
@@ -161,6 +161,16 @@ WKBytecodeBuilder >> forClass [
 ]
 
 { #category : #building }
+WKBytecodeBuilder >> forObject [
+
+	"Check I have not been called"
+	self assert: type isNil.
+	
+	"We are building an object (and not a program or class)"
+	type := 3
+]
+
+{ #category : #building }
 WKBytecodeBuilder >> forProgram [
 
 	"Check I have not been called"
@@ -185,6 +195,12 @@ WKBytecodeBuilder >> instantiate: aName [
 	^ instructions add: (WKInstantiate new
 		classNameIndex: literalIndex;
 		yourself)
+]
+
+{ #category : #instructions }
+WKBytecodeBuilder >> instantiateList [
+	
+	instructions add: WKInstantiateList new
 ]
 
 { #category : #'instructions-control flow' }
@@ -225,6 +241,16 @@ WKBytecodeBuilder >> popIntoInstanceVariable: anInteger [
 WKBytecodeBuilder >> popIntoTemporaryVariable: anInteger [ 
 	
 	instructions add: (WKPopIntoTemporaryVariable new index: anInteger; yourself)
+]
+
+{ #category : #instructions }
+WKBytecodeBuilder >> pushGlobalNamed: aString [ 
+	
+	| literalIndex |
+	literalIndex := self addLiteral: aString.
+	instructions add: (WKPushGlobalVariable new
+		index: literalIndex;
+		yourself)
 ]
 
 { #category : #instructions }

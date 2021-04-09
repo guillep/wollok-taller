@@ -39,6 +39,35 @@ WollokBytecodeCompiler >> assign: right toVariable: left [
 	builder pushInstanceVariable: ivIndex.
 ]
 
+{ #category : #visiting }
+WollokBytecodeCompiler >> buildBehavior: aWollokBehavior [
+
+	| superclass hasInitializer |
+	superclass := aWollokBehavior name value ~= 'Object' ifTrue: [
+		aWollokBehavior superclass
+			ifNil: [ 'Object' ]
+			ifNotNil: [ 
+				self assert: aWollokBehavior superclass identifiers size = 1.
+				aWollokBehavior superclass identifiers first value ] ].
+	builder addLiteral: superclass.
+
+	"Initializer of the variable declarations"
+	builder beginMethod: '____init' native: false numberOfParameters: 0.
+	hasInitializer := false.
+	aWollokBehavior variables do: [ :e |
+		e right ifNotNil: [
+			hasInitializer := true.
+			self assign: e right toVariable: e variable ]
+	].
+	hasInitializer ifFalse: [ builder pushSelf ].
+	builder returnTop.
+	builder endMethod.
+		
+
+	aWollokBehavior members do: [ :e |
+		e acceptVisitor: self ].
+]
+
 { #category : #accessing }
 WollokBytecodeCompiler >> builder [
 	^ builder
@@ -170,35 +199,10 @@ WollokBytecodeCompiler >> visitBooleanLiteral: aWollokBooleanLiteralNode [
 
 { #category : #visiting }
 WollokBytecodeCompiler >> visitClass: aWollokClassNode [
-	
-	| superclass hasInitializer |
+
 	compilationClass := aWollokClassNode.
-
 	builder forClass.
-
-	superclass := aWollokClassNode name value ~= 'Object' ifTrue: [
-		aWollokClassNode superclass
-			ifNil: [ 'Object' ]
-			ifNotNil: [ 
-				self assert: aWollokClassNode superclass identifiers size = 1.
-				aWollokClassNode superclass identifiers first value ] ].
-	builder addLiteral: superclass.
-
-	"Initializer of the variable declarations"
-	builder beginMethod: '____init' native: false numberOfParameters: 0.
-	hasInitializer := false.
-	aWollokClassNode variables do: [ :e |
-		e right ifNotNil: [
-			hasInitializer := true.
-			self assign: e right toVariable: e variable ]
-	].
-	hasInitializer ifFalse: [ builder pushSelf ].
-	builder returnTop.
-	builder endMethod.
-		
-
-	aWollokClassNode members do: [ :e |
-		e acceptVisitor: self ].
+	self buildBehavior: aWollokClassNode
 ]
 
 { #category : #visiting }
@@ -254,7 +258,12 @@ WollokBytecodeCompiler >> visitIfExpression: aWollokIfExpressionNode [
 { #category : #visiting }
 WollokBytecodeCompiler >> visitListLiteral: aWollokListLiteralNode [ 
 	
-	"Do nothing"
+	builder instantiateList.
+	aWollokListLiteralNode elements do: [ :e |
+		builder dup.
+		e acceptVisitor: self.
+		builder send: 'add' numberOfArguments: 1.
+		builder pop ].
 ]
 
 { #category : #visiting }
@@ -280,7 +289,11 @@ WollokBytecodeCompiler >> visitMethodDeclaration: aWollokMethodDeclarationNode [
 	].
 	
 	native := aWollokMethodDeclarationNode native notNil.
-		
+	
+	"Check if method is abstract"
+	(native not and: [ aWollokMethodDeclarationNode expression isNil ])
+		ifTrue: [ ^ self ].
+	
 	builder
 		beginMethod: aWollokMethodDeclarationNode name value
 		native: native
@@ -293,9 +306,28 @@ WollokBytecodeCompiler >> visitMethodDeclaration: aWollokMethodDeclarationNode [
 ]
 
 { #category : #visiting }
+WollokBytecodeCompiler >> visitNamedObject: aWollokNamedObjectNode [ 
+
+	compilationClass := aWollokNamedObjectNode.
+	builder forObject.
+	self buildBehavior: aWollokNamedObjectNode
+]
+
+{ #category : #visiting }
+WollokBytecodeCompiler >> visitNullLiteral: aWollokNullLiteralNode [ 
+	
+	"nothing?"
+]
+
+{ #category : #visiting }
 WollokBytecodeCompiler >> visitNumberLiteral: aWollokNumberLiteralNode [ 
 	
 	builder pushLiteral: aWollokNumberLiteralNode value value asNumber
+]
+
+{ #category : #visiting }
+WollokBytecodeCompiler >> visitObjectLiteral: aWollokObjectLiteralNode [ 
+	self shouldBeImplemented.
 ]
 
 { #category : #visiting }
@@ -325,6 +357,12 @@ WollokBytecodeCompiler >> visitReturnExpression: aWollokReturnExpressionNode [
 WollokBytecodeCompiler >> visitSelf: aWollokSelfNode [ 
 	
 	builder pushSelf
+]
+
+{ #category : #visiting }
+WollokBytecodeCompiler >> visitSetLiteral: aWollokSetLiteralNode [ 
+	
+	"Nothing for now?"
 ]
 
 { #category : #visiting }
@@ -374,7 +412,9 @@ WollokBytecodeCompiler >> visitVariable: aWollokVariableNode [
 		ifPresent: [ :tempIndex | ^ builder pushTemporaryVariable: tempIndex ].
 	
 	ivIndex := self indexOfInstanceVariableNamed: aWollokVariableNode name value.
-	builder pushInstanceVariable: ivIndex.
+	ivIndex > 0 ifTrue: [ ^ builder pushInstanceVariable: ivIndex ].
+	
+	builder pushGlobalNamed: aWollokVariableNode name value
 
 ]
 

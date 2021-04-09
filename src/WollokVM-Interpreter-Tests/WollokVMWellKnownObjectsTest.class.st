@@ -8,7 +8,6 @@ Class {
 WollokVMWellKnownObjectsTest >> setUp [ 
 
 	super setUp.
-	
 	interpreter addBindingOfClass: 'myObject' fromString: '
 object myObject { 
 	var a = 7
@@ -25,7 +24,7 @@ WollokVMWellKnownObjectsTest >> testWellKnownObjectCanReceiveMessages [
 
 	| object |
 
-	object := self interpretExpression: 'myObject.getA()'.
+	object := self interpretExpression: 'myObject.getVar()'.
 	
 	self assert: object literalValue equals: 7
 ]
