@@ -189,14 +189,14 @@ WollowVMInterpreterNumberTests >> testTruncateReturnsCorrectValue [
 
 	| returnValue |
 	returnValue := self interpretExpression: '1.223445.truncate(3)'.
-	self assert: returnValue literalValue equals: 1.223.
+	self assert: returnValue literalValue asString equals: 1.223 asScaledDecimal asString.
 	
 	returnValue := self interpretExpression: '14.6165.truncate(3)'.
-	self assert: returnValue literalValue equals: 14.616.
+	self assert: returnValue literalValue asString equals: 14.616 asScaledDecimal asString.
 	
 	returnValue := self interpretExpression: '-14.6165.truncate(3)'.
-	self assert: returnValue literalValue equals: -14.616.
+	self assert: returnValue literalValue asString equals: -14.616 asScaledDecimal asString.
 	
 	returnValue := self interpretExpression: '5.truncate(3)'.
-	self assert: returnValue literalValue equals: 5.
+	self assert: returnValue literalValue asString equals: (5 asScaledDecimal: 8) asString.
 ]

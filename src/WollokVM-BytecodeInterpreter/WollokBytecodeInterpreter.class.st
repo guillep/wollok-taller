@@ -396,6 +396,7 @@ WollokBytecodeInterpreter >> initialize [
 	selectorMappings at: '+' put: 'plus'.
 	selectorMappings at: '/' put: 'division'.
 	selectorMappings at: '*' put: 'multiplication'.
+	selectorMappings at: '%' put: 'modulo'.
 	selectorMappings at: '==' put: 'equals'.
 	selectorMappings at: '>' put: 'greater'.
 	selectorMappings at: '<' put: 'lower'.
@@ -622,6 +623,16 @@ WollokBytecodeInterpreter >> wollok_lang_Number__minus [
 ]
 
 { #category : #'native methods' }
+WollokBytecodeInterpreter >> wollok_lang_Number__modulo [
+	
+	| number2 number1 |
+	number2 := self pop literalValue.
+	number1 := self pop literalValue.
+	
+	self push: (self asWollokNumber: number1 \\ number2)
+]
+
+{ #category : #'native methods' }
 WollokBytecodeInterpreter >> wollok_lang_Number__multiplication [
 
 	| number1 number2 |
@@ -637,6 +648,17 @@ WollokBytecodeInterpreter >> wollok_lang_Number__plus [
 	number2 := self pop.
 	number1 := self pop.
 	self push: (self asWollokNumber: (number1 literalValue + number2 literalValue))
+]
+
+{ #category : #'native methods' }
+WollokBytecodeInterpreter >> wollok_lang_Number__truncate [
+
+	| truncation number truncatedNumber |
+	truncation := self pop literalValue.
+	number := self pop literalValue.
+
+	truncatedNumber := number truncateTo: 1 / (10 raisedTo: truncation) asScaledDecimal.
+	self push: (self asWollokNumber: truncatedNumber)
 ]
 
 { #category : #'native methods' }
