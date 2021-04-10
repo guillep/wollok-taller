@@ -3,7 +3,8 @@ Class {
 	#superclass : #Object,
 	#instVars : [
 		'literals',
-		'bytecode'
+		'bytecode',
+		'name'
 	],
 	#category : #'WollokVM-BytecodeInterpreter'
 }
@@ -27,7 +28,14 @@ WKBytecodeProgram >> decodeFrom: aReadStream [
 { #category : #loading }
 WKBytecodeProgram >> finishLoadingIn: aWollokBytecodeInterpreter [ 
 	
-	"Nothing"
+	aWollokBytecodeInterpreter program: self
+]
+
+{ #category : #accessing }
+WKBytecodeProgram >> interpreter: aWollokBytecodeInterpreter [ 
+
+	| interpreter |
+	interpreter := aWollokBytecodeInterpreter
 ]
 
 { #category : #accessing }
@@ -44,6 +52,12 @@ WKBytecodeProgram >> literals [
 { #category : #accessing }
 WKBytecodeProgram >> literals: anObject [
 	literals := anObject
+]
+
+{ #category : #accessing }
+WKBytecodeProgram >> name: aString [
+	
+	name := aString
 ]
 
 { #category : #accessing }

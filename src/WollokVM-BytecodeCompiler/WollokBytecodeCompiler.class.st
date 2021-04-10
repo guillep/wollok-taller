@@ -6,7 +6,8 @@ Class {
 		'operatorToMessageMapping',
 		'temporaryIndexes',
 		'loader',
-		'compilationClass'
+		'compilationClass',
+		'results'
 	],
 	#category : #'WollokVM-BytecodeCompiler'
 }
@@ -19,6 +20,20 @@ WollokBytecodeCompiler >> allVariablesOf: aWollokClassNode [
 
 	superVariables := self allVariablesOf: (self superClassOf: aWollokClassNode).
 	^ superVariables , (self variablesOf: aWollokClassNode)
+]
+
+{ #category : #'anonimous-objects' }
+WollokBytecodeCompiler >> allocateAnonimousClassName [
+	
+	^ UUID new asString
+]
+
+{ #category : #accessing }
+WollokBytecodeCompiler >> asFullyQualifiedName: aString [ 
+	
+	({#Object. #List. #Exception. #String. #Boolean. #Set. #Collection. #Number}
+		includes: aString) ifFalse: [ ^ aString ].
+	^ 'wollok.lang.', aString
 ]
 
 { #category : #visiting }
@@ -43,7 +58,8 @@ WollokBytecodeCompiler >> assign: right toVariable: left [
 WollokBytecodeCompiler >> buildBehavior: aWollokBehavior [
 
 	| superclass hasInitializer |
-	superclass := aWollokBehavior name value ~= 'Object' ifTrue: [
+	"If it is a root class, superclass is nil"
+	superclass := (self isRootClass: aWollokBehavior) ifFalse: [
 		aWollokBehavior superclass
 			ifNil: [ 'Object' ]
 			ifNotNil: [ 
@@ -64,8 +80,19 @@ WollokBytecodeCompiler >> buildBehavior: aWollokBehavior [
 	builder endMethod.
 		
 
-	aWollokBehavior members do: [ :e |
+	aWollokBehavior methods do: [ :e |
 		e acceptVisitor: self ].
+	
+	results add: builder bytecode
+]
+
+{ #category : #visiting }
+WollokBytecodeCompiler >> buildClass: aWollokClassNode named: aName [
+
+	compilationClass := aWollokClassNode.
+	builder forClass.
+	builder addLiteral: aName.
+	self buildBehavior: aWollokClassNode
 ]
 
 { #category : #accessing }
@@ -76,6 +103,12 @@ WollokBytecodeCompiler >> builder [
 { #category : #accessing }
 WollokBytecodeCompiler >> builder: anObject [
 	builder := anObject
+]
+
+{ #category : #building }
+WollokBytecodeCompiler >> bytecode [
+	
+	^ builder bytecode
 ]
 
 { #category : #accessing }
@@ -91,10 +124,8 @@ WollokBytecodeCompiler >> compilationClass: anObject [
 
 { #category : #api }
 WollokBytecodeCompiler >> compile: aWollokFileNode [ 
-	
-	builder := WKBytecodeBuilder new.
-	aWollokFileNode acceptVisitor: self.
-	^ builder bytecode
+
+	aWollokFileNode acceptVisitor: self
 ]
 
 { #category : #'name-resolution' }
@@ -105,15 +136,25 @@ WollokBytecodeCompiler >> indexOfInstanceVariableNamed: aString [
 			indexOf: aString
 ]
 
-{ #category : #visiting }
+{ #category : #api }
 WollokBytecodeCompiler >> initialize [
 
 	super initialize.
+	results := OrderedCollection new.
+	
 	temporaryIndexes := Dictionary new.
+	builder := WKBytecodeBuilder new.
 	
 	operatorToMessageMapping := Dictionary new.
 	operatorToMessageMapping at: '!' put: 'negate'.
 	operatorToMessageMapping at: '-' put: 'invert'
+]
+
+{ #category : #testing }
+WollokBytecodeCompiler >> isRootClass: aWollokBehavior [ 
+	
+	^ (aWollokBehavior isKindOf: WollokClassNode)
+		and: [ aWollokBehavior name value = 'Object' ]
 ]
 
 { #category : #accessing }
@@ -136,11 +177,17 @@ WollokBytecodeCompiler >> operatorToMessageMapping: anObject [
 	operatorToMessageMapping := anObject
 ]
 
+{ #category : #accessing }
+WollokBytecodeCompiler >> results [
+	
+	^ results
+]
+
 { #category : #'name-resolution' }
 WollokBytecodeCompiler >> superClassOf: aWollokClassNode [ 
 	
 	| superclassname |
-	aWollokClassNode name value = 'Object'
+	(self isRootClass: aWollokClassNode)
 		ifTrue: [ ^ nil ].
 	superclassname := aWollokClassNode superclass
 		ifNil: [ 'Object' ]
@@ -200,9 +247,7 @@ WollokBytecodeCompiler >> visitBooleanLiteral: aWollokBooleanLiteralNode [
 { #category : #visiting }
 WollokBytecodeCompiler >> visitClass: aWollokClassNode [
 
-	compilationClass := aWollokClassNode.
-	builder forClass.
-	self buildBehavior: aWollokClassNode
+	^ self buildClass: aWollokClassNode named: (self asFullyQualifiedName: aWollokClassNode name value)
 ]
 
 { #category : #visiting }
@@ -310,6 +355,7 @@ WollokBytecodeCompiler >> visitNamedObject: aWollokNamedObjectNode [
 
 	compilationClass := aWollokNamedObjectNode.
 	builder forObject.
+	builder addLiteral: aWollokNamedObjectNode name value.
 	self buildBehavior: aWollokNamedObjectNode
 ]
 
@@ -327,7 +373,23 @@ WollokBytecodeCompiler >> visitNumberLiteral: aWollokNumberLiteralNode [
 
 { #category : #visiting }
 WollokBytecodeCompiler >> visitObjectLiteral: aWollokObjectLiteralNode [ 
-	self shouldBeImplemented.
+	
+	| compiler anonimousClassName |
+	anonimousClassName := self allocateAnonimousClassName.
+	
+	compiler := WollokBytecodeCompiler new.
+	compiler loader: WollokReducedLoader new.
+	results addAll: (compiler
+		buildClass: aWollokObjectLiteralNode
+		named: anonimousClassName) results.
+
+	builder instantiate: anonimousClassName.
+	builder dup.
+	builder send: '____init' numberOfArguments: 0.
+	builder pop.
+	builder dup.
+	builder send: 'initialize' numberOfArguments: 0.
+	builder pop.
 ]
 
 { #category : #visiting }
@@ -340,10 +402,12 @@ WollokBytecodeCompiler >> visitParenthesizedExpression: aWollokParenthesizedExpr
 WollokBytecodeCompiler >> visitProgram: aWollokProgramNode [ 
 
 	builder forProgram.
+	builder addLiteral: aWollokProgramNode name value.
 	aWollokProgramNode elements
 		do: [ :e | e acceptVisitor: self ]
 		separatedBy: [ builder pop ].
 	builder returnTop.
+	results add: builder bytecode
 ]
 
 { #category : #visiting }
@@ -399,7 +463,6 @@ WollokBytecodeCompiler >> visitUnaryOperation: aWollokUnaryOperationNode [
 	messageName := operatorToMessageMapping
 		at: aWollokUnaryOperationNode operation value
 		ifAbsent: [ aWollokUnaryOperationNode operation value ].
-
 	builder send: messageName numberOfArguments: 0
 ]
 

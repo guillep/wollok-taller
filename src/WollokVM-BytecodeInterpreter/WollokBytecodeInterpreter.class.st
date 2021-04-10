@@ -11,7 +11,8 @@ Class {
 		'falseObject',
 		'trueObject',
 		'selectorMappings',
-		'nullObject'
+		'nullObject',
+		'program'
 	],
 	#category : #'WollokVM-BytecodeInterpreter'
 }
@@ -87,6 +88,14 @@ WollokBytecodeInterpreter >> asWollokString: aString [
 		wollokClass: (self resolve: 'wollok.lang.String');
 		literalValue: aString;
 		yourself
+]
+
+{ #category : #'literal-decoding' }
+WollokBytecodeInterpreter >> basicDecodeStringFrom: aReadStream [ 
+	
+	| stringSize |
+	stringSize := aReadStream next.
+	^ (aReadStream next: stringSize) utf8Decoded
 ]
 
 { #category : #bytecode }
@@ -254,28 +263,17 @@ WollokBytecodeInterpreter >> compile: aWollokFileNode [
 	
 	^ WollokBytecodeCompiler new
 		loader: WollokReducedLoader new;
-		compile: aWollokFileNode
+		compile: aWollokFileNode;
+		results
 ]
 
 { #category : #'name-resolution' }
 WollokBytecodeInterpreter >> compileAndInstall: astclass [
 
-	| bytecode wollokBytecodeClass behaviourClass |
-	bytecode := self compile: astclass ast.
-	
-	behaviourClass := bytecode first = 2
-		ifTrue: [ WKBytecodeClass ]
-		ifFalse: [ WKBytecodeObject ].
-	
-	wollokBytecodeClass := behaviourClass new.
-	wollokBytecodeClass interpreter: self.
-	wollokBytecodeClass name: astclass name.
-	
-	"Registering before loading to cut potential recursions"
-	bindings at: astclass name put: wollokBytecodeClass.
-	
-	self loadBytecode: bytecode in: wollokBytecodeClass.
-	^ wollokBytecodeClass
+	| results |
+	results := self compile: astclass ast.
+	results do: [ :e | self load: e ].
+	^ bindings at: astclass name
 ]
 
 { #category : #frames }
@@ -338,10 +336,7 @@ WollokBytecodeInterpreter >> decodeNumberFrom: aReadStream [
 { #category : #'literal-decoding' }
 WollokBytecodeInterpreter >> decodeStringFrom: aReadStream [ 
 	
-	| stringSize utf8encodedBytes |
-	stringSize := aReadStream next.
-	utf8encodedBytes := aReadStream next: stringSize.
-	^ self asWollokString: utf8encodedBytes utf8Decoded
+	^ self asWollokString: (self basicDecodeStringFrom: aReadStream)
 ]
 
 { #category : #interpreting }
@@ -448,14 +443,11 @@ WollokBytecodeInterpreter >> interpretLoop [
 { #category : #interpreting }
 WollokBytecodeInterpreter >> interpretProgram: bytecodes [
 	
-	| program |
-
 	self push: -1 "sentinel receiver".
 	self push: -1 "sentinel framePointer".
 	self push: -1 "sentinel programCounter".
 	
-	program := WKBytecodeProgram new.
-	self loadBytecode: bytecodes in: program.
+	bytecodes do: [ :e | self load: e ].
 	self createFrameForMethod: program.
 	self interpretLoop.
 	^ self pop
@@ -463,7 +455,7 @@ WollokBytecodeInterpreter >> interpretProgram: bytecodes [
 
 { #category : #interpreting }
 WollokBytecodeInterpreter >> interpretUntilReturn: parentFrame [
-	
+
 	[ framePointer > parentFrame ] whileTrue: [ 
 		| bytecode |
 		bytecode := self fetchNextBytecode.
@@ -493,6 +485,51 @@ WollokBytecodeInterpreter >> isTrue: aWollokObject [
 WollokBytecodeInterpreter >> literalAt: anInteger [ 
 	
 	^ self currentMethod literalAt: anInteger
+]
+
+{ #category : #'name-resolution' }
+WollokBytecodeInterpreter >> load: bytecode [
+
+	| behaviourClass wollokBytecodeClass stream name |
+	behaviourClass := bytecode first = 1
+		ifTrue: [ WKBytecodeProgram ]
+		ifFalse: [ bytecode first = 2
+			ifTrue: [ WKBytecodeClass ]
+			ifFalse: [ WKBytecodeObject ] ].
+	
+	"Decode the name first, to be able to register it"
+	stream := bytecode readStream.
+	stream next: 3 "skip type and number of literals and type of literal".
+	name := self basicDecodeStringFrom: stream.
+	
+	wollokBytecodeClass := behaviourClass new.
+	wollokBytecodeClass interpreter: self.
+	wollokBytecodeClass name: name.
+	
+	"Registering before loading to cut potential recursions"
+	bindings at: name put: wollokBytecodeClass.
+	
+	self loadBytecode: bytecode in: wollokBytecodeClass.
+	^ wollokBytecodeClass
+]
+
+{ #category : #'name-resolution' }
+WollokBytecodeInterpreter >> load: bytecode named: name [
+
+	| behaviourClass wollokBytecodeClass |
+	behaviourClass := bytecode first = 2
+		ifTrue: [ WKBytecodeClass ]
+		ifFalse: [ WKBytecodeObject ].
+	
+	wollokBytecodeClass := behaviourClass new.
+	wollokBytecodeClass interpreter: self.
+	wollokBytecodeClass name: name.
+	
+	"Registering before loading to cut potential recursions"
+	bindings at: name put: wollokBytecodeClass.
+	
+	self loadBytecode: bytecode in: wollokBytecodeClass.
+	^ wollokBytecodeClass
 ]
 
 { #category : #loader }
@@ -542,6 +579,12 @@ WollokBytecodeInterpreter >> pop: anInteger [
 	"pop a number of elements"
 	
 	stackPointer := stackPointer - anInteger
+]
+
+{ #category : #accessing }
+WollokBytecodeInterpreter >> program: aWKBytecodeProgram [ 
+	
+	program := aWKBytecodeProgram
 ]
 
 { #category : #frames }

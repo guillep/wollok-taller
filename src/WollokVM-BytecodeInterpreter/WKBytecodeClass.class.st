@@ -146,5 +146,5 @@ WKBytecodeClass >> superclass: anObject [
 { #category : #accessing }
 WKBytecodeClass >> superclassName [
 	
-	^ literals first
+	^ literals second
 ]
