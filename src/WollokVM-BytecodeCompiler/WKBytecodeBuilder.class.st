@@ -308,3 +308,9 @@ WKBytecodeBuilder >> superSend [
 
 	instructions add: WKSuperSend new
 ]
+
+{ #category : #instructions }
+WKBytecodeBuilder >> throw [
+	
+	instructions add: WKThrow new.
+]

@@ -73,9 +73,10 @@ WollokBytecodeCompiler >> buildBehavior: aWollokBehavior [
 	aWollokBehavior variables do: [ :e |
 		e right ifNotNil: [
 			hasInitializer := true.
-			self assign: e right toVariable: e variable ]
+			self assign: e right toVariable: e variable.
+			builder pop. ]
 	].
-	hasInitializer ifFalse: [ builder pushSelf ].
+	builder pushSelf.
 	builder returnTop.
 	builder endMethod.
 		
@@ -362,7 +363,7 @@ WollokBytecodeCompiler >> visitNamedObject: aWollokNamedObjectNode [
 { #category : #visiting }
 WollokBytecodeCompiler >> visitNullLiteral: aWollokNullLiteralNode [ 
 	
-	"nothing?"
+	builder pushLiteral: nil
 ]
 
 { #category : #visiting }
@@ -449,7 +450,8 @@ WollokBytecodeCompiler >> visitSuperInvocation: aWollokSuperInvocationNode [
 { #category : #visiting }
 WollokBytecodeCompiler >> visitThrow: aWollokThrowNode [ 
 	
-	"Nothing for now"
+	aWollokThrowNode exception acceptVisitor: self.
+	builder throw
 ]
 
 { #category : #visiting }

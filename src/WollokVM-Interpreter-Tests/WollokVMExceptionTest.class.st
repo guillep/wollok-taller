@@ -7,7 +7,7 @@ Class {
 { #category : #tests }
 WollokVMExceptionTest >> testAllObjectsUnderstandErrorMessage [
 
-	[self interpretExpression: 'true.error("ahhhh me muero")'] 
+	[self interpretExpression: 'throw new Exception()'] 
 		on: WollokError 
 		do: [ :e |
 			self assert: e wollokException isNotNil.
@@ -77,7 +77,7 @@ class MyFaillingClass {
 	var a = 7
 	
 	method boom(){
-		self.error("Boom!")
+		throw new Exception("Boom!")
 	}
 }'.
 

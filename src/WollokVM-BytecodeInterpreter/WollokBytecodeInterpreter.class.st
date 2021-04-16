@@ -104,7 +104,7 @@ WollokBytecodeInterpreter >> bytecodeDup [
 	| value |
 	value := self pop.
 	self push: value.
-	self push: value
+	self push: value 
 ]
 
 { #category : #bytecode }
@@ -258,6 +258,24 @@ WollokBytecodeInterpreter >> bytecodeSendSuper [
 	self activateMethod: method.
 ]
 
+{ #category : #bytecode }
+WollokBytecodeInterpreter >> bytecodeThrow [
+	
+	| exception currentFrame |
+	exception := self stackAt: 0.
+	currentFrame := framePointer.
+	[currentFrame = -1 "At end"] whileFalse: [
+		(self frame: framePointer handlesException: exception)
+			ifTrue: [ self halt ].
+		currentFrame := stack at: currentFrame - 2.
+	].
+	
+	"Unhandled exception"
+	WollokError new
+		wollokException: exception;
+		signal
+]
+
 { #category : #compiling }
 WollokBytecodeInterpreter >> compile: aWollokFileNode [ 
 	
@@ -372,6 +390,12 @@ WollokBytecodeInterpreter >> fetchNextBytecode [
 	^ bytecode
 ]
 
+{ #category : #'exception-management' }
+WollokBytecodeInterpreter >> frame: aFramePointer handlesException: aWollokException [
+	
+	^ false
+]
+
 { #category : #accessing }
 WollokBytecodeInterpreter >> framePointer [
 	^ framePointer
@@ -419,6 +443,7 @@ WollokBytecodeInterpreter >> initialize [
 	dispatchTable at: 16 put: #bytecodeSendSuper.
 	dispatchTable at: 17 put: #bytecodeNewList.
 	dispatchTable at: 18 put: #bytecodePushGlobal.
+	dispatchTable at: 19 put: #bytecodeThrow.
 	
 	selectorMappings := Dictionary new.
 	selectorMappings at: '-' put: 'minus'.
