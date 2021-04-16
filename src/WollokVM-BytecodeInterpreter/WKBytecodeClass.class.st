@@ -1,8 +1,7 @@
 Class {
 	#name : #WKBytecodeClass,
-	#superclass : #Object,
+	#superclass : #WKBytecodeElement,
 	#instVars : [
-		'literals',
 		'methods',
 		'superclass',
 		'name',
@@ -30,29 +29,6 @@ WKBytecodeClass >> decodeFrom: aReadStream [
 	[aReadStream atEnd] whileFalse: [
 		self addMethod: (self decodeMethodFrom: aReadStream)
 	]
-]
-
-{ #category : #decoding }
-WKBytecodeClass >> decodeMethodFrom: aReadStream [ 
-
-	| beginMethod selector isNative methodBytecode parameters |
-	beginMethod := aReadStream next.
-	self assert: beginMethod = 5.
-	selector := literals at: aReadStream next.
-	isNative := aReadStream next = 1.
-	parameters := aReadStream next.
-	
-	isNative ifFalse: [
-		methodBytecode := aReadStream upTo: 255 "end of method"
-	].
-	
-	^ WKBytecodeMethod new
-		bytecodeClass: self;
-		selector: selector;
-		isNative: isNative;
-		numberOfParameters: parameters;
-		methodBytecode: methodBytecode;
-		yourself
 ]
 
 { #category : #loading }
@@ -86,22 +62,6 @@ WKBytecodeClass >> interpreter [
 { #category : #accessing }
 WKBytecodeClass >> interpreter: anObject [
 	interpreter := anObject
-]
-
-{ #category : #accessing }
-WKBytecodeClass >> literalAt: anInteger [ 
-	
-	^ literals at: anInteger
-]
-
-{ #category : #accessing }
-WKBytecodeClass >> literals [
-	^ literals
-]
-
-{ #category : #accessing }
-WKBytecodeClass >> literals: aCollection [ 
-	literals := aCollection
 ]
 
 { #category : #lookup }

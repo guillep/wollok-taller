@@ -221,14 +221,9 @@ WollokBytecodeInterpreter >> bytecodePushTemporary [
 { #category : #bytecode }
 WollokBytecodeInterpreter >> bytecodeReturn [
 	
-	| method returnedValue |
+	| returnedValue |
 	returnedValue := self pop.
-	method := self pop.
-	programCounter := self pop.
-	framePointer := self pop.
-	self pop: method numberOfParameters.
-	self pop. "the receiver"
-
+	self popFrame.
 	self push: returnedValue.
 ]
 
@@ -261,15 +256,14 @@ WollokBytecodeInterpreter >> bytecodeSendSuper [
 { #category : #bytecode }
 WollokBytecodeInterpreter >> bytecodeThrow [
 	
-	| exception currentFrame |
+	| exception currentFrame currentIP |
 	exception := self stackAt: 0.
-	currentFrame := framePointer.
-	[currentFrame = -1 "At end"] whileFalse: [
-		(self frame: framePointer handlesException: exception)
-			ifTrue: [ self halt ].
-		currentFrame := stack at: currentFrame - 2.
+	[framePointer = -1 "At end"] whileFalse: [
+		(self frame: framePointer ip: programCounter handlesException: exception)
+			ifTrue: [ ^ self ].
+		self popFrame.		
 	].
-	
+
 	"Unhandled exception"
 	WollokError new
 		wollokException: exception;
@@ -391,9 +385,34 @@ WollokBytecodeInterpreter >> fetchNextBytecode [
 ]
 
 { #category : #'exception-management' }
-WollokBytecodeInterpreter >> frame: aFramePointer handlesException: aWollokException [
+WollokBytecodeInterpreter >> frame: aFramePointer ip: frameInstructionPointer handlesException: aWollokException [
 	
+	| method |
+	method := self frameMethod: aFramePointer.
+	method exceptionHandlers do: [ :e |
+		(e includesBytecode: frameInstructionPointer)
+			ifTrue: [
+				programCounter := e handlerStart.
+				^ true ] ].
 	^ false
+]
+
+{ #category : #frame }
+WollokBytecodeInterpreter >> frameCallerFP: anInteger [ 
+	
+	^ stack at: anInteger - 2
+]
+
+{ #category : #frames }
+WollokBytecodeInterpreter >> frameCallerIP: aFramePointer [
+
+	^ stack at: aFramePointer - 1
+]
+
+{ #category : #frames }
+WollokBytecodeInterpreter >> frameMethod: anInteger [ 
+	
+	^ stack at: anInteger 
 ]
 
 { #category : #accessing }
@@ -604,6 +623,14 @@ WollokBytecodeInterpreter >> pop: anInteger [
 	"pop a number of elements"
 	
 	stackPointer := stackPointer - anInteger
+]
+
+{ #category : #bytecode }
+WollokBytecodeInterpreter >> popFrame [
+	
+	programCounter := self frameCallerIP: framePointer.
+	stackPointer := framePointer - 2.
+	framePointer := self frameCallerFP: framePointer.
 ]
 
 { #category : #accessing }

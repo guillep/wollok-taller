@@ -57,7 +57,7 @@ WollokBytecodeCompiler >> assign: right toVariable: left [
 { #category : #visiting }
 WollokBytecodeCompiler >> buildBehavior: aWollokBehavior [
 
-	| superclass hasInitializer |
+	| superclass hasInitializer methodStart |
 	"If it is a root class, superclass is nil"
 	superclass := (self isRootClass: aWollokBehavior) ifFalse: [
 		aWollokBehavior superclass
@@ -68,7 +68,7 @@ WollokBytecodeCompiler >> buildBehavior: aWollokBehavior [
 	builder addLiteral: superclass.
 
 	"Initializer of the variable declarations"
-	builder beginMethod: '____init' native: false numberOfParameters: 0.
+	methodStart := builder beginMethod: '____init' native: false numberOfParameters: 0.
 	hasInitializer := false.
 	aWollokBehavior variables do: [ :e |
 		e right ifNotNil: [
@@ -78,7 +78,7 @@ WollokBytecodeCompiler >> buildBehavior: aWollokBehavior [
 	].
 	builder pushSelf.
 	builder returnTop.
-	builder endMethod.
+	builder endMethod: methodStart.
 		
 
 	aWollokBehavior methods do: [ :e |
@@ -327,7 +327,7 @@ WollokBytecodeCompiler >> visitMemberFeatureCall: aWollokMemberFeatureCallNode [
 { #category : #visiting }
 WollokBytecodeCompiler >> visitMethodDeclaration: aWollokMethodDeclarationNode [ 
 	
-	| native |
+	| native methodStart |
 
 	temporaryIndexes := Dictionary new.
 	aWollokMethodDeclarationNode parameters withIndexDo: [ :e :i |
@@ -340,7 +340,7 @@ WollokBytecodeCompiler >> visitMethodDeclaration: aWollokMethodDeclarationNode [
 	(native not and: [ aWollokMethodDeclarationNode expression isNil ])
 		ifTrue: [ ^ self ].
 	
-	builder
+	methodStart := builder
 		beginMethod: aWollokMethodDeclarationNode name value
 		native: native
 		numberOfParameters: aWollokMethodDeclarationNode parameters size.
@@ -348,7 +348,7 @@ WollokBytecodeCompiler >> visitMethodDeclaration: aWollokMethodDeclarationNode [
 
 	aWollokMethodDeclarationNode expression acceptVisitor: self.
 	builder returnTop.
-	builder endMethod.
+	builder endMethod: methodStart.
 ]
 
 { #category : #visiting }
@@ -402,12 +402,16 @@ WollokBytecodeCompiler >> visitParenthesizedExpression: aWollokParenthesizedExpr
 { #category : #visiting }
 WollokBytecodeCompiler >> visitProgram: aWollokProgramNode [ 
 
+	| methodStart |
 	builder forProgram.
 	builder addLiteral: aWollokProgramNode name value.
+	
+	methodStart := builder beginMethod: aWollokProgramNode name value native: false numberOfParameters: 0.
 	aWollokProgramNode elements
 		do: [ :e | e acceptVisitor: self ]
 		separatedBy: [ builder pop ].
 	builder returnTop.
+	builder endMethod: methodStart.
 	results add: builder bytecode
 ]
 
@@ -438,8 +442,7 @@ WollokBytecodeCompiler >> visitStringLiteral: aWollokStringLiteralNode [
 
 { #category : #visiting }
 WollokBytecodeCompiler >> visitSuperInvocation: aWollokSuperInvocationNode [ 
-	
-	| messageName |
+
 	builder pushSelf.
 	aWollokSuperInvocationNode arguments do: [ :e |
 		e acceptVisitor: self ].
@@ -452,6 +455,35 @@ WollokBytecodeCompiler >> visitThrow: aWollokThrowNode [
 	
 	aWollokThrowNode exception acceptVisitor: self.
 	builder throw
+]
+
+{ #category : #visiting }
+WollokBytecodeCompiler >> visitTry: aWollokTryNode [
+
+	| exceptionHandler jumpsToEndOfCatchBlocks |
+
+	jumpsToEndOfCatchBlocks := OrderedCollection new.
+
+	exceptionHandler := builder newExceptionHandlerDuring: [
+		"Do not compile this as a closure. Inline the children statements directly"
+		aWollokTryNode expression expression acceptVisitor: self.
+		"Jump after the exception management code"
+		jumpsToEndOfCatchBlocks add: (builder jump: nil).
+	].
+
+	aWollokTryNode catchBlocks do: [ :e | | exceptionName |
+		exceptionName := self asFullyQualifiedName: e exceptionType identifiers first value.
+		exceptionHandler addCaseFor: exceptionName startingAt: builder label.
+		"Do not compile this as a closure. Inline the children statements directly"
+		e expression expression acceptVisitor: self.
+		jumpsToEndOfCatchBlocks add: (builder jump: nil).
+	].
+
+	jumpsToEndOfCatchBlocks do: [ :e |
+		e jumpTarget: builder label ].
+
+	"Do not compile this as a closure. Inline the children statements directly"
+	aWollokTryNode alwaysExpression expression acceptVisitor: self.
 ]
 
 { #category : #visiting }

@@ -26,7 +26,7 @@ class MyFaillingClass {
 	var a = 7
 	
 	method boom(){
-		self.error("Boom!")
+		throw new Exception()
 	}
 	
 	method noboom() {  }
@@ -77,7 +77,7 @@ class MyFaillingClass {
 	var a = 7
 	
 	method boom(){
-		throw new Exception("Boom!")
+		throw new Exception()
 	}
 }'.
 
@@ -100,7 +100,7 @@ class MyFaillingClass {
 	var a = 7
 	
 	method boom(){
-		self.error("Boom!")
+		throw new Exception()
 	}
 }'.
 
@@ -115,7 +115,7 @@ class MyFaillingClass {
 { #category : #tests }
 WollokVMExceptionTest >> testWollokExceptionReachingEndOfStackPopsAsAWollokError [
 
-	[self interpretExpression: 'throw new Exception("ahhhh me muero")'] 
+	[self interpretExpression: 'throw new Exception()'] 
 		on: WollokError 
 		do: [ :e |
 			self assert: e wollokException isNotNil.

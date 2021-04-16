@@ -6,7 +6,8 @@ Class {
 		'isNative',
 		'methodBytecode',
 		'numberOfParameters',
-		'bytecodeClass'
+		'bytecodeClass',
+		'exceptionHandlers'
 	],
 	#category : #'WollokVM-BytecodeInterpreter'
 }
@@ -25,6 +26,17 @@ WKBytecodeMethod >> bytecodeClass [
 { #category : #accessing }
 WKBytecodeMethod >> bytecodeClass: anObject [
 	bytecodeClass := anObject
+]
+
+{ #category : #accessing }
+WKBytecodeMethod >> exceptionHandlers [
+	^ exceptionHandlers
+]
+
+{ #category : #accessing }
+WKBytecodeMethod >> exceptionHandlers: aCollection [ 
+
+	exceptionHandlers := aCollection 
 ]
 
 { #category : #accessing }

@@ -5,7 +5,8 @@ Class {
 		'bytecode',
 		'literals',
 		'instructions',
-		'type'
+		'type',
+		'exceptionHandlers'
 	],
 	#category : #'WollokVM-BytecodeCompiler'
 }
@@ -31,7 +32,9 @@ WKBytecodeBuilder >> beginMethod: aString native: isNative numberOfParameters: n
 		nameIndex: literalIndex;
 		native: isNative;
 		numberOfParameters: numberOfParameters;
-		yourself)
+		yourself).
+	"Return a label for instructions relative to the method start"
+	^ self label
 ]
 
 { #category : #building }
@@ -145,9 +148,17 @@ WKBytecodeBuilder >> encodeString: aString inStream: aWriteStream [
 ]
 
 { #category : #instructions }
-WKBytecodeBuilder >> endMethod [
-	
-	instructions add: WKEndMethod new
+WKBytecodeBuilder >> endMethod: aMethodStart [
+
+	"Dump the exception handlers into the end of the method.
+	It is up to the encoder to decide how they are finally stored"	
+	instructions add: (WKEndMethod new
+		methodStart: aMethodStart;		
+		exceptionHandlers: exceptionHandlers;
+		yourself).
+
+	"Reinitialize the exception handler accumulator"
+	exceptionHandlers := OrderedCollection new.
 ]
 
 { #category : #building }
@@ -185,6 +196,7 @@ WKBytecodeBuilder >> initialize [
 	super initialize.
 	literals := OrderedCollection new.
 	instructions := OrderedCollection new.
+	exceptionHandlers := OrderedCollection new
 ]
 
 { #category : #instructions }
@@ -223,6 +235,21 @@ WKBytecodeBuilder >> jumpFalse: target [
 WKBytecodeBuilder >> label [
 	
 	^ instructions add: WKLabel new
+]
+
+{ #category : #'exception-management' }
+WKBytecodeBuilder >> newExceptionHandlerDuring: aBlockClosure [ 
+	
+	| handler |
+	handler := WKExceptionHandler new.
+	handler builder: self.
+	
+	handler start: self label.
+	aBlockClosure value.
+	handler end: self label.
+	
+	exceptionHandlers add: handler.
+	^ handler
 ]
 
 { #category : #instructions }

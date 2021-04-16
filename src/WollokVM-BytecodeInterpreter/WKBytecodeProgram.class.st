@@ -1,28 +1,28 @@
 Class {
 	#name : #WKBytecodeProgram,
-	#superclass : #Object,
+	#superclass : #WKBytecodeElement,
 	#instVars : [
-		'literals',
-		'bytecode',
-		'name'
+		'name',
+		'method'
 	],
 	#category : #'WollokVM-BytecodeInterpreter'
 }
 
 { #category : #accessing }
 WKBytecodeProgram >> bytecode [
-	^ bytecode
-]
-
-{ #category : #accessing }
-WKBytecodeProgram >> bytecode: anObject [
-	bytecode := anObject
+	^ method bytecode
 ]
 
 { #category : #decoding }
 WKBytecodeProgram >> decodeFrom: aReadStream [ 
 
-	self bytecode: aReadStream upToEnd
+	method := self decodeMethodFrom: aReadStream
+]
+
+{ #category : #accessing }
+WKBytecodeProgram >> exceptionHandlers [
+	
+	^ method exceptionHandlers
 ]
 
 { #category : #loading }
@@ -33,25 +33,6 @@ WKBytecodeProgram >> finishLoadingIn: aWollokBytecodeInterpreter [
 
 { #category : #accessing }
 WKBytecodeProgram >> interpreter: aWollokBytecodeInterpreter [ 
-
-	| interpreter |
-	interpreter := aWollokBytecodeInterpreter
-]
-
-{ #category : #accessing }
-WKBytecodeProgram >> literalAt: anInteger [
-
-	^ literals at: anInteger
-]
-
-{ #category : #accessing }
-WKBytecodeProgram >> literals [
-	^ literals
-]
-
-{ #category : #accessing }
-WKBytecodeProgram >> literals: anObject [
-	literals := anObject
 ]
 
 { #category : #accessing }
