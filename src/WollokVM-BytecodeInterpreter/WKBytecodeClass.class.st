@@ -48,10 +48,7 @@ WKBytecodeClass >> initialize [
 { #category : #instantiate }
 WKBytecodeClass >> instantiate [
 	
-	^ WollokVMObject new
-		wollokClass: self;
-		interpreter: interpreter;
-		yourself
+	^ interpreter instantiateClass: self
 ]
 
 { #category : #accessing }

@@ -73,6 +73,11 @@ WKBytecodeBuilder >> bytecode [
 	^ header , bytecode
 ]
 
+{ #category : #'exception-management' }
+WKBytecodeBuilder >> dumpExceptionHandlers [
+	self shouldBeImplemented.
+]
+
 { #category : #instructions }
 WKBytecodeBuilder >> dup [
 	

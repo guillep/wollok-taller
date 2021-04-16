@@ -1,7 +1,7 @@
 Class {
 	#name : #WollokFalse,
 	#superclass : #WollokVMObject,
-	#category : #'WollokVM-Interpreter'
+	#category : #'WollokVM-Memory'
 }
 
 { #category : #'logical operations' }
@@ -25,13 +25,13 @@ WollokFalse >> literalValue [
 { #category : #operators }
 WollokFalse >> wollokIdenticalTo: anotherWollokObject [
 
-	^ interpreter asWollokBoolean: anotherWollokObject isWollokFalse
+	^ memory asWollokBoolean: anotherWollokObject isWollokFalse
 ]
 
 { #category : #native }
 WollokFalse >> wollokIdentity [
 	
-	^ interpreter asWollokNumber: false identityHash
+	^ memory asWollokNumber: false identityHash
 ]
 
 { #category : #'logical operations' }

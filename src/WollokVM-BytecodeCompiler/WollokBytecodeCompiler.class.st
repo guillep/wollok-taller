@@ -483,7 +483,8 @@ WollokBytecodeCompiler >> visitTry: aWollokTryNode [
 		e jumpTarget: builder label ].
 
 	"Do not compile this as a closure. Inline the children statements directly"
-	aWollokTryNode alwaysExpression expression acceptVisitor: self.
+	aWollokTryNode alwaysExpression ifNotNil: [ :exp |
+		exp expression acceptVisitor: self ].
 ]
 
 { #category : #visiting }

@@ -8,11 +8,9 @@ Class {
 		'programCounter',
 		'framePointer',
 		'dispatchTable',
-		'falseObject',
-		'trueObject',
 		'selectorMappings',
-		'nullObject',
-		'program'
+		'program',
+		'memory'
 	],
 	#category : #'WollokVM-BytecodeInterpreter'
 }
@@ -68,26 +66,8 @@ WollokBytecodeInterpreter >> argumentAt: anInteger put: aValue [
 WollokBytecodeInterpreter >> asWollokBoolean: aBoolean [
 	
 	^ aBoolean
-		ifTrue: [ trueObject ]
-		ifFalse: [ falseObject ]
-]
-
-{ #category : #converting }
-WollokBytecodeInterpreter >> asWollokNumber: aNumber [ 
-
-	^ WollokVMLiteral new
-		wollokClass: (self resolve: 'wollok.lang.Number');
-		literalValue: aNumber;
-		yourself
-]
-
-{ #category : #converting }
-WollokBytecodeInterpreter >> asWollokString: aString [ 
-	
-	^ WollokVMLiteral new
-		wollokClass: (self resolve: 'wollok.lang.String');
-		literalValue: aString;
-		yourself
+		ifTrue: [ memory trueObject ]
+		ifFalse: [ memory falseObject ]
 ]
 
 { #category : #'literal-decoding' }
@@ -140,15 +120,8 @@ WollokBytecodeInterpreter >> bytecodeNew [
 
 { #category : #bytecode }
 WollokBytecodeInterpreter >> bytecodeNewList [
-	
-	| class newList |
-	class := self resolve: 'wollok.lang.List'.
-	newList := WollokVMLiteral new
-		wollokClass: class;
-		interpreter: self;
-		literalValue: OrderedCollection new;
-		yourself.
-	self push: newList
+
+	self push: memory instantiateList
 ]
 
 { #category : #bytecode }
@@ -306,8 +279,8 @@ WollokBytecodeInterpreter >> currentMethod [
 WollokBytecodeInterpreter >> decodeBooleanFrom: aReadStream [
 	
 	^ (aReadStream next = 1)
-		ifTrue: [ self trueObject ]
-		ifFalse: [ self falseObject ]
+		ifTrue: [ memory trueObject ]
+		ifFalse: [ memory falseObject ]
 ]
 
 { #category : #'literal-decoding' }
@@ -340,7 +313,7 @@ WollokBytecodeInterpreter >> decodeNumberFrom: aReadStream [
 	denominator := aReadStream next: 8.
 	scale := aReadStream next.
 	
-	^ self asWollokNumber: (ScaledDecimal
+	^ memory asWollokNumber: (ScaledDecimal
 		newFromNumber: (numerator asInteger / denominator asInteger)
 		scale: scale)
 ]
@@ -348,7 +321,7 @@ WollokBytecodeInterpreter >> decodeNumberFrom: aReadStream [
 { #category : #'literal-decoding' }
 WollokBytecodeInterpreter >> decodeStringFrom: aReadStream [ 
 	
-	^ self asWollokString: (self basicDecodeStringFrom: aReadStream)
+	^ memory asWollokString: (self basicDecodeStringFrom: aReadStream)
 ]
 
 { #category : #interpreting }
@@ -367,12 +340,6 @@ WollokBytecodeInterpreter >> executeNativeMethodFrom: aClassName selector: aSele
 	
 	nativeName := ((aClassName copyReplaceAll: '.' with: '_'), '__', mapping) asSymbol.
 	^ self perform: nativeName
-]
-
-{ #category : #'well-known objects' }
-WollokBytecodeInterpreter >> falseObject [
-	
-	^ falseObject
 ]
 
 { #category : #interpreting }
@@ -431,20 +398,6 @@ WollokBytecodeInterpreter >> initialize [
 	framePointer := stackPointer := 1.
 	programCounter := 1.
 	
-	trueObject := WollokTrue new
-		interpreter: self;
-		wollokClass: (self resolve: 'wollok.lang.Boolean');
-		yourself.
-
-	falseObject := WollokFalse new
-		interpreter: self;
-		wollokClass: (self resolve: 'wollok.lang.Boolean');
-		yourself.
-		
-	nullObject := WollokVMObject new
-		interpreter: self;
-		yourself.
-	
 	dispatchTable := Dictionary new.
 	dispatchTable at: 1 put: #bytecodePushLiteral.
 	dispatchTable at: 2 put: #bytecodeSend.
@@ -476,6 +429,12 @@ WollokBytecodeInterpreter >> initialize [
 	selectorMappings at: '||' put: 'or'.
 	selectorMappings at: '&&' put: 'and'.
 	selectorMappings at: '===' put: 'identical'
+]
+
+{ #category : #instantiation }
+WollokBytecodeInterpreter >> instantiateClass: aWKBytecodeClass [
+
+	^ memory instantiateClass: aWKBytecodeClass
 ]
 
 { #category : #interpreting }
@@ -510,19 +469,19 @@ WollokBytecodeInterpreter >> interpretUntilReturn: parentFrame [
 { #category : #testing }
 WollokBytecodeInterpreter >> isFalse: aWollokObject [
 	
-	^ aWollokObject == falseObject
+	^ aWollokObject == memory falseObject
 ]
 
 { #category : #testing }
 WollokBytecodeInterpreter >> isNull: aWollokVMObject [ 
 	
-	^ nullObject == aWollokVMObject
+	^ memory nullObject == aWollokVMObject
 ]
 
 { #category : #testing }
 WollokBytecodeInterpreter >> isTrue: aWollokObject [
 	
-	^ trueObject == aWollokObject
+	^ memory trueObject == aWollokObject
 ]
 
 { #category : #accessing }
@@ -604,10 +563,12 @@ WollokBytecodeInterpreter >> lookup: aString withReceiver: aWollokObject [
 	^ aWollokObject wollokClass lookup: aString literalValue asSymbol
 ]
 
-{ #category : #'well-known objects' }
-WollokBytecodeInterpreter >> nullObject [
+{ #category : #accessing }
+WollokBytecodeInterpreter >> memory: aMemory [
 	
-	^ nullObject
+	memory := aMemory.
+	memory interpreter: self.
+	memory initializeHeap
 ]
 
 { #category : #'stack-management' }
@@ -687,11 +648,6 @@ WollokBytecodeInterpreter >> stackAt: anInteger [
 	^ stack at: stackPointer - anInteger
 ]
 
-{ #category : #accessing }
-WollokBytecodeInterpreter >> trueObject [
-	^ trueObject
-]
-
 { #category : #'native methods' }
 WollokBytecodeInterpreter >> wollok_lang_Boolean__and [
 	
@@ -710,7 +666,7 @@ WollokBytecodeInterpreter >> wollok_lang_Boolean__or [
 	self push: (self asWollokBoolean: (boolean1 literalValue | boolean2 literalValue))
 ]
 
-{ #category : #'as yet unclassified' }
+{ #category : #'native methods' }
 WollokBytecodeInterpreter >> wollok_lang_List__add [
 	
 	| added receiver |
@@ -736,7 +692,7 @@ WollokBytecodeInterpreter >> wollok_lang_List__size [
 	
 	| list |
 	list := self pop.
-	self push: (self asWollokNumber: list literalValue size)
+	self push: (memory asWollokNumber: list literalValue size)
 ]
 
 { #category : #'native methods' }
@@ -745,7 +701,7 @@ WollokBytecodeInterpreter >> wollok_lang_Number__division [
 	| number1 number2 |
 	number2 := self pop.
 	number1 := self pop.
-	self push: (self asWollokNumber: (number1 literalValue / number2 literalValue))
+	self push: (memory asWollokNumber: (number1 literalValue / number2 literalValue))
 ]
 
 { #category : #'native methods' }
@@ -771,7 +727,7 @@ WollokBytecodeInterpreter >> wollok_lang_Number__invert [
 
 	| number1 |
 	number1 := self pop.
-	self push: (self asWollokNumber: number1 literalValue negated)
+	self push: (memory asWollokNumber: number1 literalValue negated)
 ]
 
 { #category : #'native methods' }
@@ -789,7 +745,7 @@ WollokBytecodeInterpreter >> wollok_lang_Number__minus [
 	| number1 number2 |
 	number2 := self pop.
 	number1 := self pop.
-	self push: (self asWollokNumber: (number1 literalValue - number2 literalValue))
+	self push: (memory asWollokNumber: (number1 literalValue - number2 literalValue))
 ]
 
 { #category : #'native methods' }
@@ -799,7 +755,7 @@ WollokBytecodeInterpreter >> wollok_lang_Number__modulo [
 	number2 := self pop literalValue.
 	number1 := self pop literalValue.
 	
-	self push: (self asWollokNumber: number1 \\ number2)
+	self push: (memory asWollokNumber: number1 \\ number2)
 ]
 
 { #category : #'native methods' }
@@ -808,7 +764,7 @@ WollokBytecodeInterpreter >> wollok_lang_Number__multiplication [
 	| number1 number2 |
 	number2 := self pop.
 	number1 := self pop.
-	self push: (self asWollokNumber: (number1 literalValue * number2 literalValue))
+	self push: (memory asWollokNumber: (number1 literalValue * number2 literalValue))
 ]
 
 { #category : #'native methods' }
@@ -817,7 +773,7 @@ WollokBytecodeInterpreter >> wollok_lang_Number__plus [
 	| number1 number2 |
 	number2 := self pop.
 	number1 := self pop.
-	self push: (self asWollokNumber: (number1 literalValue + number2 literalValue))
+	self push: (memory asWollokNumber: (number1 literalValue + number2 literalValue))
 ]
 
 { #category : #'native methods' }
@@ -828,7 +784,7 @@ WollokBytecodeInterpreter >> wollok_lang_Number__truncate [
 	number := self pop literalValue.
 
 	truncatedNumber := number truncateTo: 1 / (10 raisedTo: truncation) asScaledDecimal.
-	self push: (self asWollokNumber: truncatedNumber)
+	self push: (memory asWollokNumber: truncatedNumber)
 ]
 
 { #category : #'native methods' }
@@ -845,7 +801,7 @@ WollokBytecodeInterpreter >> wollok_lang_String__concat [
 	| receiver argument |
 	argument := self pop.
 	receiver := self pop.
-	self push: (self asWollokString: receiver literalValue, argument literalValue)
+	self push: (memory asWollokString: receiver literalValue, argument literalValue)
 ]
 
 { #category : #'native methods' }
@@ -853,5 +809,5 @@ WollokBytecodeInterpreter >> wollok_lang_String__toString [
 	
 	| receiver |
 	receiver := self pop.
-	self push: (self asWollokString: receiver literalValue asString)
+	self push: (memory asWollokString: receiver literalValue asString)
 ]

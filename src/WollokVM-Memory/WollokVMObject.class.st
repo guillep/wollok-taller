@@ -3,10 +3,10 @@ Class {
 	#superclass : #Object,
 	#instVars : [
 		'wollokClass',
-		'interpreter',
-		'instanceVariables'
+		'instanceVariables',
+		'memory'
 	],
-	#category : #'WollokVM-Interpreter'
+	#category : #'WollokVM-Memory'
 }
 
 { #category : #UI }
@@ -38,13 +38,8 @@ WollokVMObject >> instanceVariablesValues [
 ]
 
 { #category : #accessing }
-WollokVMObject >> interpreter [
-	^ interpreter
-]
-
-{ #category : #accessing }
-WollokVMObject >> interpreter: anObject [
-	interpreter := anObject
+WollokVMObject >> memory: aMemory [
+	memory := aMemory
 ]
 
 { #category : #printing }
@@ -95,7 +90,7 @@ WollokVMObject >> wollokIdentity [
 { #category : #'object-access' }
 WollokVMObject >> wollokInstanceVariableAt: anIndex [ 
 	
-	^ instanceVariables at: anIndex ifAbsent: [ interpreter nullObject ]
+	^ instanceVariables at: anIndex ifAbsent: [ memory nullObject ]
 ]
 
 { #category : #'object-access' }

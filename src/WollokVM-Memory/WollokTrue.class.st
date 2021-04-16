@@ -1,7 +1,7 @@
 Class {
 	#name : #WollokTrue,
 	#superclass : #WollokVMObject,
-	#category : #'WollokVM-Interpreter'
+	#category : #'WollokVM-Memory'
 }
 
 { #category : #'logical operations' }

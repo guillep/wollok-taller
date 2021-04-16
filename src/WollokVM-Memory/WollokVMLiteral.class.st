@@ -4,7 +4,7 @@ Class {
 	#instVars : [
 		'literalValue'
 	],
-	#category : #'WollokVM-Interpreter'
+	#category : #'WollokVM-Memory'
 }
 
 { #category : #accessing }

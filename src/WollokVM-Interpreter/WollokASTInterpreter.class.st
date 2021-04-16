@@ -32,26 +32,6 @@ WollokASTInterpreter >> addBindingOfClass: aName fromString: aString [
 	WollokReducedLoader new addBindingOfClass: aName fromString: aString in: self
 ]
 
-{ #category : #visiting }
-WollokASTInterpreter >> asWollokBoolean: aPharoBoolean [
-	
-	^ aPharoBoolean
-		ifTrue: [ WollokTrue new ]
-		ifFalse: [ | boolean |
-			boolean := WollokFalse new.
-			boolean interpreter: self.
-			boolean ]
-]
-
-{ #category : #literals }
-WollokASTInterpreter >> asWollokNumber: anInteger [ 
-
-	^ WollokVMLiteral new
-		wollokClass: (self resolve: 'wollok.lang.Number');
-		literalValue: anInteger;
-		yourself
-]
-
 { #category : #interpreting }
 WollokASTInterpreter >> initialize [
 

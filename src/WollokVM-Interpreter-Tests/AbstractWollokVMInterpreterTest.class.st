@@ -32,8 +32,8 @@ AbstractWollokVMInterpreterTest >> parse: aString [
 { #category : #running }
 AbstractWollokVMInterpreterTest >> setUp [
 
-	interpreter := WollokBytecodeInterpreter new		
-
+	interpreter := WollokBytecodeInterpreter new.
+	interpreter memory: WKPharoHeapMemory new.
 ]
 
 { #category : #utils }
