@@ -6,7 +6,8 @@ Class {
 		'literals',
 		'instructions',
 		'type',
-		'exceptionHandlers'
+		'exceptionHandlers',
+		'numberOfSlots'
 	],
 	#category : #'WollokVM-BytecodeCompiler'
 }
@@ -59,8 +60,11 @@ WKBytecodeBuilder >> bytecode [
 		stream nextPut: type.
 		stream nextPut: literals size.
 		literals do: [ :e | self encodeLiteral: e inStream: stream ].
+		
+		"If class, encode number of variables"
+		type = 2 ifTrue: [ stream nextPut: numberOfSlots ].
 	].
-
+	
 	bytecodeStart := header size.
 	instructions do: [ :e | 
 		e position: bytecodeStart.
@@ -255,6 +259,11 @@ WKBytecodeBuilder >> newExceptionHandlerDuring: aBlockClosure [
 	
 	exceptionHandlers add: handler.
 	^ handler
+]
+
+{ #category : #accessing }
+WKBytecodeBuilder >> numberOfSlots: anInteger [ 
+	numberOfSlots := anInteger
 ]
 
 { #category : #instructions }

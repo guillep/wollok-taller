@@ -31,7 +31,7 @@ WollowVMInterpreterNumberTests >> testComparingLowerThanTwoNumbersIsAWollokBoole
 
 	maybeANumber := self interpretExpression: '1 < 2.73'.
 
-	self assert: maybeANumber wollokClassName equals: 'wollok.lang.Boolean'
+	self assert: (interpreter wollokClassName: maybeANumber) equals: 'wollok.lang.Boolean'
 ]
 
 { #category : #'tests - operations' }
@@ -41,7 +41,7 @@ WollowVMInterpreterNumberTests >> testComparingTwoNumbersIsAWollokBoolean [
 
 	maybeANumber := self interpretExpression: '1 > 2.73'.
 
-	self assert: maybeANumber wollokClassName equals: 'wollok.lang.Boolean'
+	self assert: (interpreter wollokClassName: maybeANumber) equals: 'wollok.lang.Boolean'
 ]
 
 { #category : #'tests - operations' }
@@ -51,7 +51,7 @@ WollowVMInterpreterNumberTests >> testDifferenceOfTwoNumbersWithDecimalsHasCorre
 
 	maybeANumber := self interpretExpression: '1 - 2.73'.
 
-	self assert: maybeANumber literalValue equals: 1 - 2.73
+	self assert: (interpreter memory asPharoNumber: maybeANumber) equals: 1 - 2.73
 ]
 
 { #category : #'tests - operations' }
@@ -61,7 +61,7 @@ WollowVMInterpreterNumberTests >> testDifferenceOfTwoNumbersWithDecimalsIsAWollo
 
 	maybeANumber := self interpretExpression: '1 - 2.73'.
 
-	self assert: maybeANumber wollokClassName equals: 'wollok.lang.Number'
+	self assert: (interpreter wollokClassName: maybeANumber) equals: 'wollok.lang.Number'
 ]
 
 { #category : #'tests - operations' }
@@ -71,7 +71,7 @@ WollowVMInterpreterNumberTests >> testDivisionOfTwoNumbersWithDecimalsIsAWollokN
 
 	maybeANumber := self interpretExpression: '1 / 2.73'.
 
-	self assert: maybeANumber wollokClassName equals: 'wollok.lang.Number'
+	self assert: (interpreter wollokClassName: maybeANumber) equals: 'wollok.lang.Number'
 ]
 
 { #category : #'tests - constants' }
@@ -81,7 +81,7 @@ WollowVMInterpreterNumberTests >> testLiteralDecimalNumberIsAWollokNumber [
 
 	maybeANumber := self interpretExpression: '1.73'.
 
-	self assert: maybeANumber wollokClassName equals: 'wollok.lang.Number'
+	self assert: (interpreter wollokClassName: maybeANumber) equals: 'wollok.lang.Number'
 ]
 
 { #category : #'tests - constants' }
@@ -91,7 +91,7 @@ WollowVMInterpreterNumberTests >> testLiteralNegativeDecimalNumberIsAWollokNumbe
 
 	maybeANumber := self interpretExpression: '-1.73'.
 
-	self assert: maybeANumber wollokClassName equals: 'wollok.lang.Number'
+	self assert: (interpreter wollokClassName: maybeANumber) equals: 'wollok.lang.Number'
 ]
 
 { #category : #'tests - constants' }
@@ -101,7 +101,7 @@ WollowVMInterpreterNumberTests >> testLiteralNegativeNumberIsAWollokNumber [
 
 	maybeANumber := self interpretExpression: '-2'.
 
-	self assert: maybeANumber wollokClassName equals: 'wollok.lang.Number'
+	self assert: (interpreter wollokClassName: maybeANumber) equals: 'wollok.lang.Number'
 ]
 
 { #category : #'tests - constants' }
@@ -111,7 +111,7 @@ WollowVMInterpreterNumberTests >> testLiteralNumberIsAWollokNumber [
 
 	maybeANumber := self interpretExpression: '1'.
 
-	self assert: maybeANumber wollokClassName equals: 'wollok.lang.Number'
+	self assert: (interpreter wollokClassName: maybeANumber) equals: 'wollok.lang.Number'
 ]
 
 { #category : #'tests - constants' }
@@ -121,7 +121,7 @@ WollowVMInterpreterNumberTests >> testLiteralNumberIsCorrectNumber [
 
 	maybeANumber := self interpretExpression: '1'.
 
-	self assert: maybeANumber literalValue equals: 1
+	self assert: (interpreter memory asPharoNumber: maybeANumber) equals: 1
 ]
 
 { #category : #'tests - operations' }
@@ -131,7 +131,7 @@ WollowVMInterpreterNumberTests >> testModOfTwoNumbersWithDecimalsIsAWollokNumber
 
 	maybeANumber := self interpretExpression: '1 % 2.73'.
 
-	self assert: maybeANumber wollokClassName equals: 'wollok.lang.Number'
+	self assert: (interpreter wollokClassName: maybeANumber) equals: 'wollok.lang.Number'
 ]
 
 { #category : #'tests - operations' }
@@ -141,7 +141,7 @@ WollowVMInterpreterNumberTests >> testMultiplicationOfTwoNumbersWithDecimalsIsAW
 
 	maybeANumber := self interpretExpression: '1 * 2.73'.
 
-	self assert: maybeANumber wollokClassName equals: 'wollok.lang.Number'
+	self assert: (interpreter wollokClassName: maybeANumber) equals: 'wollok.lang.Number'
 ]
 
 { #category : #'tests - operations' }
@@ -151,7 +151,7 @@ WollowVMInterpreterNumberTests >> testSumOfTwoNumbersHasCorrectValue [
 
 	maybeANumber := self interpretExpression: '1 + 2'.
 
-	self assert: maybeANumber literalValue equals: 3
+	self assert: (interpreter memory asPharoNumber: maybeANumber) equals: 3
 ]
 
 { #category : #'tests - operations' }
@@ -161,7 +161,7 @@ WollowVMInterpreterNumberTests >> testSumOfTwoNumbersIsAWollokNumber [
 
 	maybeANumber := self interpretExpression: '1 + 2'.
 
-	self assert: maybeANumber wollokClassName equals: 'wollok.lang.Number'
+	self assert: (interpreter wollokClassName: maybeANumber) equals: 'wollok.lang.Number'
 ]
 
 { #category : #'tests - operations' }
@@ -171,7 +171,7 @@ WollowVMInterpreterNumberTests >> testSumOfTwoNumbersWithDecimalsHasCorrectValue
 
 	maybeANumber := self interpretExpression: '1 + 2.73'.
 
-	self assert: maybeANumber literalValue equals: 1 + 2.73
+	self assert: (interpreter memory asPharoNumber: maybeANumber) equals: 1 + 2.73
 ]
 
 { #category : #'tests - operations' }
@@ -181,7 +181,7 @@ WollowVMInterpreterNumberTests >> testSumOfTwoNumbersWithDecimalsIsAWollokNumber
 
 	maybeANumber := self interpretExpression: '1 + 2.73'.
 
-	self assert: maybeANumber wollokClassName equals: 'wollok.lang.Number'
+	self assert: (interpreter wollokClassName: maybeANumber) equals: 'wollok.lang.Number'
 ]
 
 { #category : #'tests - operations' }
@@ -189,14 +189,14 @@ WollowVMInterpreterNumberTests >> testTruncateReturnsCorrectValue [
 
 	| returnValue |
 	returnValue := self interpretExpression: '1.223445.truncate(3)'.
-	self assert: returnValue literalValue asString equals: 1.223 asScaledDecimal asString.
+	self assert: (interpreter memory asPharoNumber: returnValue) asString equals: 1.223 asScaledDecimal asString.
 	
 	returnValue := self interpretExpression: '14.6165.truncate(3)'.
-	self assert: returnValue literalValue asString equals: 14.616 asScaledDecimal asString.
+	self assert: (interpreter memory asPharoNumber: returnValue) asString equals: 14.616 asScaledDecimal asString.
 	
 	returnValue := self interpretExpression: '-14.6165.truncate(3)'.
-	self assert: returnValue literalValue asString equals: -14.616 asScaledDecimal asString.
+	self assert: (interpreter memory asPharoNumber: returnValue) asString equals: -14.616 asScaledDecimal asString.
 	
 	returnValue := self interpretExpression: '5.truncate(3)'.
-	self assert: returnValue literalValue asString equals: (5 asScaledDecimal: 8) asString.
+	self assert: (interpreter memory asPharoNumber: returnValue) asString equals: (5 asScaledDecimal: 8) asString.
 ]

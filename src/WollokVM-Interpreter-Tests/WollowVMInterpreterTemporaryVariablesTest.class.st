@@ -25,5 +25,5 @@ WollowVMInterpreterTemporaryVariablesTest >> testAccessToLocalVariablesReturnsCo
 	| anObject |
 	anObject := self interpretExpression: 'new MyClass().doSomething()'.
 	
-	self assert: anObject literalValue equals: 3
+	self assert: (interpreter memory asPharoNumber: anObject) equals: 3
 ]

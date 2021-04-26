@@ -10,7 +10,7 @@ WollowVMInterpreterStringTests >> testConcatenationOfStringsHasCorrectValue [
 	| object |
 	
 	object := self interpretExpression: '"abc" + "123"'.
-	self assert: object literalValue equals: 'abc123'
+	self assert: (interpreter memory asPharoString: object) equals: 'abc123'
 ]
 
 { #category : #tests }
@@ -19,7 +19,7 @@ WollowVMInterpreterStringTests >> testConcatenationOfStringsIsAWollokString [
 	| object |
 	
 	object := self interpretExpression: '"abc" + "123"'.
-	self assert: object wollokClassName equals: 'wollok.lang.String'
+	self assert: (interpreter wollokClassName: object) equals: 'wollok.lang.String'
 ]
 
 { #category : #tests }
@@ -28,7 +28,7 @@ WollowVMInterpreterStringTests >> testConstantStringHasCorrectValue [
 	| object |
 	
 	object := self interpretExpression: '"abc"'.
-	self assert: object literalValue equals: 'abc'
+	self assert: (interpreter memory asPharoString: object) equals: 'abc'
 ]
 
 { #category : #tests }
@@ -37,5 +37,5 @@ WollowVMInterpreterStringTests >> testConstantStringIsAWollokString [
 	| object |
 	
 	object := self interpretExpression: '"abc"'.
-	self assert: object wollokClassName equals: 'wollok.lang.String'
+	self assert: (interpreter wollokClassName: object) equals: 'wollok.lang.String'
 ]

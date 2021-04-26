@@ -39,7 +39,7 @@ class MyFaillingClass {
 			then always { x = 99}
 		x'.
 		
-	self assert: returnObject literalValue equals: 99
+	self assert: (interpreter memory asPharoNumber: returnObject) equals: 99
 
 ]
 
@@ -65,7 +65,7 @@ class MyFaillingClass {
 			then always { x = 99}
 		x'.
 		
-	self assert: returnObject literalValue equals: 99
+	self assert: (interpreter memory asPharoNumber: returnObject) equals: 99
 
 ]
 
@@ -107,7 +107,7 @@ class MyFaillingClass {
 	returnObject := self interpretExpression: 'try {new MyFaillingClass().boom()}
 		catch e:Exception {return 7}'.
 		
-	self assert: returnObject literalValue equals: 7
+	self assert: (interpreter memory asPharoNumber: returnObject) equals: 7
 	
 
 ]

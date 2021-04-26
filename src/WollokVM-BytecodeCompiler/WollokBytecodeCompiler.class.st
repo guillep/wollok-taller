@@ -7,7 +7,8 @@ Class {
 		'temporaryIndexes',
 		'loader',
 		'compilationClass',
-		'results'
+		'results',
+		'asts'
 	],
 	#category : #'WollokVM-BytecodeCompiler'
 }
@@ -54,6 +55,12 @@ WollokBytecodeCompiler >> assign: right toVariable: left [
 	builder pushInstanceVariable: ivIndex.
 ]
 
+{ #category : #accessing }
+WollokBytecodeCompiler >> asts: aCollection [ 
+	
+	asts := aCollection
+]
+
 { #category : #visiting }
 WollokBytecodeCompiler >> buildBehavior: aWollokBehavior [
 
@@ -92,6 +99,7 @@ WollokBytecodeCompiler >> buildClass: aWollokClassNode named: aName [
 
 	compilationClass := aWollokClassNode.
 	builder forClass.
+	builder numberOfSlots: (self allVariablesOf: aWollokClassNode) size.
 	builder addLiteral: aName.
 	self buildBehavior: aWollokClassNode
 ]
@@ -192,7 +200,12 @@ WollokBytecodeCompiler >> superClassOf: aWollokClassNode [
 		ifTrue: [ ^ nil ].
 	superclassname := aWollokClassNode superclass
 		ifNil: [ 'Object' ]
-		ifNotNil: [ aWollokClassNode superclass halt ].
+		ifNotNil: [ | ids |
+			ids := aWollokClassNode superclass identifiers.
+			self haltIf: ids size > 1.
+			ids first value ].
+		
+	asts at: superclassname ifPresent: [ :p | ^ p ].
 	^ loader astOfClassNamed: superclassname
 ]
 

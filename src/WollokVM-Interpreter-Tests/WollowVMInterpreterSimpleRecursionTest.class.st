@@ -30,5 +30,5 @@ WollowVMInterpreterSimpleRecursionTest >> testSendingRecursiveCallReturnsCorrect
 	| anObject |
 	anObject := self interpretExpression: 'new MyClass().doSomething()'.
 	
-	self assert: anObject literalValue equals: 42
+	self assert: (interpreter memory asPharoNumber: anObject) equals: 42
 ]

@@ -28,7 +28,7 @@ WollowVMInterpreterSimpleSendingMessageTest >> testNewExpressionReturnsWollokObj
 	| anObject |
 	anObject := self interpretExpression: 'new MyClass()'.
 	
-	self assert: anObject wollokClassName equals: 'MyClass'
+	self assert: (interpreter wollokClassName: anObject) equals: 'MyClass'
 ]
 
 { #category : #tests }
@@ -37,7 +37,7 @@ WollowVMInterpreterSimpleSendingMessageTest >> testSendingAMessageThatReturnsInt
 	| anObject |
 	anObject := self interpretExpression: 'new MyClass().answerToEverything()'.
 	
-	self assert: anObject literalValue equals: 42
+	self assert: (interpreter memory asPharoNumber: anObject) equals: 42
 ]
 
 { #category : #tests }
@@ -46,5 +46,5 @@ WollowVMInterpreterSimpleSendingMessageTest >> testSendingAMessageThatReturnsInt
 	| anObject |
 	anObject := self interpretExpression: 'new MyClass().answerToEverything()'.
 	
-	self assert: anObject wollokClassName equals: 'wollok.lang.Number'
+	self assert: (interpreter wollokClassName: anObject) equals: 'wollok.lang.Number'
 ]

@@ -33,7 +33,7 @@ AbstractWollokVMInterpreterTest >> parse: aString [
 AbstractWollokVMInterpreterTest >> setUp [
 
 	interpreter := WollokBytecodeInterpreter new.
-	interpreter memory: WKPharoHeapMemory new.
+	interpreter memory: WKSemispaceMemory new.
 ]
 
 { #category : #utils }

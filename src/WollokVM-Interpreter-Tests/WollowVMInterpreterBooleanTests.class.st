@@ -26,7 +26,7 @@ WollowVMInterpreterBooleanTests >> testLiteralFalseIsAWollokBoolean [
 	| returnValue |
 	
 	returnValue := self interpretExpression: 'false'.
-	self assert: returnValue wollokClassName equals: 'wollok.lang.Boolean'
+	self assert: (interpreter classOf: returnValue) name equals: 'wollok.lang.Boolean'
 ]
 
 { #category : #tests }

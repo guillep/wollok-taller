@@ -49,6 +49,12 @@ WKPharoHeapMemory >> falseObject: anObject [
 	falseObject := anObject
 ]
 
+{ #category : #'object-format' }
+WKPharoHeapMemory >> fetchInstanceVariable: instanceVariableIndex ofObject: anObject [
+	
+	^ anObject wollokInstanceVariableAt: instanceVariableIndex
+]
+
 { #category : #initialization }
 WKPharoHeapMemory >> initializeHeap [
 	
@@ -112,6 +118,12 @@ WKPharoHeapMemory >> nullObject: anObject [
 WKPharoHeapMemory >> resolve: aString [ 
 	
 	^ interpreter resolve: aString
+]
+
+{ #category : #'object-format' }
+WKPharoHeapMemory >> storeInstanceVariable: instanceVariableIndex ofObject: anObject withValue: aValue [ 
+	
+	anObject wollokInstanceVariableAt: instanceVariableIndex put: aValue
 ]
 
 { #category : #accessing }

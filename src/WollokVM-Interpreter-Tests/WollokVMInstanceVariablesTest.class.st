@@ -22,7 +22,7 @@ WollokVMInstanceVariablesTest >> testConstantsAreInitializedWithCorrectValue [
 
 	returnObject := self interpretExpression: 'new MyClass().doSomething()'.
 	
-	self assert: returnObject literalValue equals: 7
+	self assert: (interpreter memory asPharoNumber: returnObject) equals: 7
 ]
 
 { #category : #tests }
@@ -60,7 +60,7 @@ WollokVMInstanceVariablesTest >> testVariablesAreInitializedWithCorrectValue [
 
 	returnObject := self interpretExpression: 'new MyClass().doSomething()'.
 	
-	self assert: returnObject literalValue equals: 7
+	self assert: (interpreter memory asPharoNumber: returnObject) equals: 7
 ]
 
 { #category : #tests }
@@ -80,7 +80,7 @@ WollokVMInstanceVariablesTest >> testVariablesCanBeInitializedWithAnExpression [
 
 	returnObject := self interpretExpression: 'new MyClass().doSomething()'.
 	
-	self assert: returnObject literalValue equals: 21
+	self assert: (interpreter memory asPharoNumber: returnObject)  equals: 21
 ]
 
 { #category : #tests }
@@ -101,5 +101,5 @@ WollokVMInstanceVariablesTest >> testVariablesCanBeModified [
 
 	returnObject := self interpretExpression: 'new MyClass().doSomething()'.
 	
-	self assert: returnObject literalValue equals: 25
+	self assert: (interpreter memory asPharoNumber: returnObject) equals: 25
 ]

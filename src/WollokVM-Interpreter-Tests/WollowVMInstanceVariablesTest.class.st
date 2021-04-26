@@ -38,7 +38,7 @@ WollowVMInstanceVariablesTest >> testInstanceVariableCanBeModified [
 	a.setA(77)
 	a.getA()'.
 	
-	self assert: anObject literalValue equals: 77
+	self assert: (interpreter memory asPharoNumber: anObject) equals: 77
 ]
 
 { #category : #tests }
@@ -47,7 +47,7 @@ WollowVMInstanceVariablesTest >> testInstanceVariableIsInitializedWithExpression
 	| anObject |
 	anObject := self interpretExpression: 'new MyClass().getA()'.
 	
-	self assert: anObject literalValue equals: 3
+	self assert: (interpreter memory asPharoNumber: anObject) equals: 3
 ]
 
 { #category : #tests }

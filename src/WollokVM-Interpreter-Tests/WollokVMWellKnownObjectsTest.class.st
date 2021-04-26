@@ -26,7 +26,7 @@ WollokVMWellKnownObjectsTest >> testWellKnownObjectCanReceiveMessages [
 
 	object := self interpretExpression: 'myObject.getVar()'.
 	
-	self assert: object literalValue equals: 7
+	self assert: (interpreter memory asPharoNumber: object) equals: 7
 ]
 
 { #category : #'as yet unclassified' }
@@ -53,7 +53,7 @@ WollokVMWellKnownObjectsTest >> testliteralObjectCanReceiveMessages [
 		}
 	}.getA()'.
 	
-	self assert: object literalValue equals: 4
+	self assert: (interpreter memory asPharoNumber: object) equals: 4
 
 ]
 

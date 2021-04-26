@@ -19,7 +19,7 @@ WollokVMCollectionsTest >> testLiteralListIsAWollokList [
 	| object |
 	
 	object := self interpretExpression: '[2, 3 , 4]'.
-	self assert: object wollokClassName equals: 'wollok.lang.List'
+	self assert: (interpreter wollokClassName: object) equals: 'wollok.lang.List'
 ]
 
 { #category : #tests }
@@ -28,5 +28,5 @@ WollokVMCollectionsTest >> testSizeReturnsTheSize [
 	| object |
 	
 	object := self interpretExpression: '[2, 3 , 4].size()'.
-	self assert: object literalValue equals: 3
+	self assert: (interpreter memory asPharoNumber: object) equals: 3
 ]

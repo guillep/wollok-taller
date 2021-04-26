@@ -39,7 +39,7 @@ WollowVMInitializationTest >> testInstanceVariableIsInitializedWithInitializeMet
 	| anObject |
 	anObject := self interpretExpression: 'new MyClass().getA()'.
 	
-	self assert: anObject literalValue equals: 3
+	self assert: (interpreter memory asPharoNumber: anObject) equals: 3
 ]
 
 { #category : #tests }

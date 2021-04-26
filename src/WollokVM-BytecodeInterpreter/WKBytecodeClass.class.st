@@ -5,7 +5,8 @@ Class {
 		'methods',
 		'superclass',
 		'name',
-		'interpreter'
+		'interpreter',
+		'numberOfSlots'
 	],
 	#category : #'WollokVM-BytecodeInterpreter'
 }
@@ -13,7 +14,7 @@ Class {
 { #category : #accessing }
 WKBytecodeClass >> addMethod: aWKBytecodeMethod [ 
 	
-	methods at: aWKBytecodeMethod selector literalValue asSymbol put: aWKBytecodeMethod
+	methods at: (self memory asPharoString: aWKBytecodeMethod selector) asSymbol put: aWKBytecodeMethod
 ]
 
 { #category : #accessing }
@@ -26,6 +27,7 @@ WKBytecodeClass >> allVariables [
 WKBytecodeClass >> decodeFrom: aReadStream [ 
 	
 	"Read Methods"
+	numberOfSlots := aReadStream next.
 	[aReadStream atEnd] whileFalse: [
 		self addMethod: (self decodeMethodFrom: aReadStream)
 	]
@@ -35,7 +37,7 @@ WKBytecodeClass >> decodeFrom: aReadStream [
 WKBytecodeClass >> finishLoadingIn: aWollokBytecodeInterpreter [ 
 	
 	self superclassName ifNil: [ ^ nil ].
-	superclass := aWollokBytecodeInterpreter resolve: self superclassName literalValue
+	superclass := aWollokBytecodeInterpreter resolve: (self memory asPharoString: self superclassName).
 ]
 
 { #category : #accessing }
@@ -68,6 +70,12 @@ WKBytecodeClass >> lookup: aString [
 ]
 
 { #category : #accessing }
+WKBytecodeClass >> memory [
+	
+	^ interpreter memory
+]
+
+{ #category : #accessing }
 WKBytecodeClass >> methods [
 	^ methods
 ]
@@ -87,6 +95,12 @@ WKBytecodeClass >> name [
 WKBytecodeClass >> name: aString [ 
 	
 	name := aString
+]
+
+{ #category : #accessing }
+WKBytecodeClass >> numberOfSlots [
+	
+	^ numberOfSlots
 ]
 
 { #category : #accessing }

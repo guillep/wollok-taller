@@ -9,7 +9,7 @@ WollowVMInterpreterControlFlowTest >> testIfUsedAsAnExpression [
 
 	| returnValue |
 	returnValue := self interpretExpression: 'if(3 > 2) 42 else 20'.
-	self assert: returnValue literalValue equals: 42
+	self assert: (interpreter memory asPharoNumber: returnValue) equals: 42
 ]
 
 { #category : #tests }
@@ -17,7 +17,7 @@ WollowVMInterpreterControlFlowTest >> testIfUsedAsAnExpressionReturnsFalseValueI
 
 	| returnValue |
 	returnValue := self interpretExpression: 'if(3 < 2) 42 else 20'.
-	self assert: returnValue literalValue equals: 20
+	self assert: (interpreter memory asPharoNumber: returnValue) equals: 20
 ]
 
 { #category : #tests }
@@ -40,7 +40,7 @@ class	MyClass {
 '.
 
 	returnValue := self interpretExpression: 'new MyClass().answerToEverything()'.
-	self assert: returnValue literalValue equals: 42
+	self assert: (interpreter memory asPharoNumber: returnValue) equals: 42
 ]
 
 { #category : #tests }
@@ -63,5 +63,5 @@ class	MyClass {
 '.
 
 	returnValue := self interpretExpression: 'new MyClass().answerToEverything()'.
-	self assert: returnValue literalValue equals: 42
+	self assert: (interpreter memory asPharoNumber: returnValue) equals: 42
 ]

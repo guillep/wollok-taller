@@ -50,7 +50,7 @@ WollowVMInheritanceTest >> testInstanceVariableCanBeModified [
 	a.setA(77)
 	a.getA()'.
 	
-	self assert: anObject literalValue equals: 78
+	self assert: (interpreter memory asPharoNumber: anObject) equals: 78
 ]
 
 { #category : #running }
@@ -59,7 +59,7 @@ WollowVMInheritanceTest >> testInstanceVariableIsInitializedWithInitializeMethod
 	| anObject |
 	anObject := self interpretExpression: 'new MyClass().getA()'.
 	
-	self assert: anObject literalValue equals: 3
+	self assert: (interpreter memory asPharoNumber: anObject) equals: 3
 ]
 
 { #category : #running }

@@ -25,6 +25,13 @@ WollokClassNode >> acceptVisitor: anAbstractNodeVisitor [
 	^ anAbstractNodeVisitor visitClass: self
 ]
 
+{ #category : #accessing }
+WollokClassNode >> allVariables [
+	
+	self superclass ifNil: [ ^ self variables ].
+	^ self superclass allVariables, self variables
+]
+
 { #category : #generated }
 WollokClassNode >> andTokens [
 	^ andTokens
