@@ -10,15 +10,32 @@ Class {
 	#category : #'WollokVM-Memory'
 }
 
+{ #category : #converting }
+WKPharoHeapMemory >> asPharoBoolean: oop [
+	
+	oop = trueObject ifTrue: [ ^ true ].
+	oop = falseObject ifTrue: [ ^ false ].
+	self error: 'invalid boolean'
+]
+
+{ #category : #converting }
+WKPharoHeapMemory >> asPharoNumber: aWollokObject [ 
+	
+	^ aWollokObject literalValue
+]
+
+{ #category : #converting }
+WKPharoHeapMemory >> asPharoString: aWollokVMLiteral [ 
+	
+	^ aWollokVMLiteral literalValue
+]
+
 { #category : #visiting }
 WKPharoHeapMemory >> asWollokBoolean: aPharoBoolean [
 	
 	^ aPharoBoolean
-		ifTrue: [ WollokTrue new ]
-		ifFalse: [ | boolean |
-			boolean := WollokFalse new.
-			boolean memory: self.
-			boolean ]
+		ifTrue: [ trueObject ]
+		ifFalse: [ falseObject ]
 ]
 
 { #category : #literals }
@@ -32,11 +49,17 @@ WKPharoHeapMemory >> asWollokNumber: anInteger [
 
 { #category : #converting }
 WKPharoHeapMemory >> asWollokString: aString [ 
-	
+
 	^ WollokVMLiteral new
 		wollokClass: (self resolve: 'wollok.lang.String');
 		literalValue: aString;
 		yourself
+]
+
+{ #category : #'object-format' }
+WKPharoHeapMemory >> classOf: aWollokObject [ 
+	
+	^ aWollokObject wollokClass 
 ]
 
 { #category : #accessing }
@@ -104,6 +127,12 @@ WKPharoHeapMemory >> interpreter: anObject [
 	interpreter := anObject
 ]
 
+{ #category : #testing }
+WKPharoHeapMemory >> isNull: aWollokObject [
+	
+	^ aWollokObject == nullObject 
+]
+
 { #category : #accessing }
 WKPharoHeapMemory >> nullObject [
 	^ nullObject
@@ -134,4 +163,10 @@ WKPharoHeapMemory >> trueObject [
 { #category : #accessing }
 WKPharoHeapMemory >> trueObject: anObject [
 	trueObject := anObject
+]
+
+{ #category : #'object-format' }
+WKPharoHeapMemory >> wollokClassName: aWollokObject [ 
+	
+	^ (self classOf: aWollokObject) name
 ]

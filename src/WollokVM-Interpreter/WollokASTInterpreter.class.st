@@ -1,8 +1,9 @@
 Class {
 	#name : #WollokASTInterpreter,
-	#superclass : #Object,
+	#superclass : #WKAbstractInterpreter,
 	#instVars : [
-		'bindings'
+		'bindings',
+		'selectorMappings'
 	],
 	#category : #'WollokVM-Interpreter'
 }
@@ -10,10 +11,11 @@ Class {
 { #category : #visiting }
 WollokASTInterpreter >> activateMethod: method withReceiver: receiver withArguments: arguments [
 
-	method	 isNative ifTrue: [
-		"Manejar caso nativo"
-		...
+	method	 native ifNotNil: [
 		^ self
+			executeNativeMethod: method
+			withReceiver: receiver
+			withArguments: arguments.
 	].
 
 	"Manejar el caso de la ejecución normal con manejo de pila"
@@ -29,7 +31,40 @@ WollokASTInterpreter >> addBinding: aName value: aWollokVMClass [
 { #category : #bindings }
 WollokASTInterpreter >> addBindingOfClass: aName fromString: aString [
 
-	WollokReducedLoader new addBindingOfClass: aName fromString: aString in: self
+	| anAST astclass |
+	anAST := WollokParser parse: aString.
+	anAST attributeNamed: #source put: aString.
+
+	astclass := WollokASTVMClass new
+		name: aName;
+		ast: anAST;
+		yourself.
+	self addBinding: aName value: astclass.
+	^ astclass
+]
+
+{ #category : #compiling }
+WollokASTInterpreter >> compile: aString [ 
+	
+	^ self parse: aString
+]
+
+{ #category : #'native methods' }
+WollokASTInterpreter >> executeNativeMethod: aMethod withReceiver: aReceiver withArguments: arguments [
+	
+	| nativeName selector mapping aClassName |
+	"Operators are not valid keyword selectors in Pharo, so map them"
+	aClassName := self wollokClassName: aReceiver.
+	selector := aMethod name value.
+	mapping := selectorMappings
+		at: selector
+		ifAbsent: [ selector ].
+	
+	nativeName := ((aClassName copyReplaceAll: '.' with: '_'), '__', mapping) asSymbol.
+	^ self
+		perform: nativeName asMutator , 'with:'
+		with: aReceiver
+		with: arguments
 ]
 
 { #category : #interpreting }
@@ -39,7 +74,20 @@ WollokASTInterpreter >> initialize [
 
 	bindings := Dictionary new.
 	
-	WollokReducedLoader new loadInto: self
+	WollokReducedLoader new loadInto: self.
+	
+	selectorMappings := Dictionary new.
+	selectorMappings at: '-' put: 'minus'.
+	selectorMappings at: '+' put: 'plus'.
+	selectorMappings at: '/' put: 'division'.
+	selectorMappings at: '*' put: 'multiplication'.
+	selectorMappings at: '%' put: 'modulo'.
+	selectorMappings at: '==' put: 'equals'.
+	selectorMappings at: '>' put: 'greater'.
+	selectorMappings at: '<' put: 'lower'.
+	selectorMappings at: '||' put: 'or'.
+	selectorMappings at: '&&' put: 'and'.
+	selectorMappings at: '===' put: 'identical'
 ]
 
 { #category : #interpreting }
@@ -52,16 +100,19 @@ WollokASTInterpreter >> interpretProgram: aFileNode [
 	^ lastValue	
 ]
 
-{ #category : #testing }
-WollokASTInterpreter >> isFalse: aWollokObject [
-
-	^ aWollokObject isWollokFalse
+{ #category : #lookup }
+WollokASTInterpreter >> lookup: aString in: aWollokVMClass [ 
+	
+	^ aWollokVMClass lookup: aString asSymbol
 ]
 
-{ #category : #testing }
-WollokASTInterpreter >> isTrue: aWollokObject [
-
-	^ aWollokObject isWollokTrue
+{ #category : #compiling }
+WollokASTInterpreter >> parse: aString [ 
+	
+	| anAST |
+	anAST := WollokParser parse: aString.
+	anAST attributeNamed: #source put: aString.
+	^ anAST
 ]
 
 { #category : #bindings }
@@ -73,27 +124,18 @@ WollokASTInterpreter >> resolve: aString [
 { #category : #visiting }
 WollokASTInterpreter >> visitBinaryOperation: aBinaryOperation [
 
-	| leftResult rightResult |
+	| leftResult rightResult receiver argument method |
 
-	leftResult := aBinaryOperation leftOperand acceptVisitor: self.	
-	rightResult := aBinaryOperation rightOperand acceptVisitor: self.
-	
-	aBinaryOperation operation value = '&&'
-		ifTrue: [ ^ leftResult & rightResult ].
-	
-	aBinaryOperation operation value = '||'
-		ifTrue: [ ^ leftResult | rightResult ].
-		
-	aBinaryOperation operation value = '==='
-		ifTrue: [ ^ leftResult wollokIdenticalTo: rightResult ].
-	
-	self notYetImplemented
+	receiver := aBinaryOperation leftOperand acceptVisitor: self.
+	argument := aBinaryOperation rightOperand acceptVisitor: self.
+	method := self lookup: aBinaryOperation operation value in: (memory classOf: receiver).
+	^ self activateMethod: method withReceiver: receiver withArguments: {argument}
 ]
 
 { #category : #visiting }
 WollokASTInterpreter >> visitBooleanLiteral: aWollokBooleanLiteralNode [
 	
-	^ self asWollokBoolean: aWollokBooleanLiteralNode value value = 'true'
+	^ memory asWollokBoolean: aWollokBooleanLiteralNode value value = 'true'
 ]
 
 { #category : #visiting }
@@ -111,4 +153,11 @@ WollokASTInterpreter >> visitMemberFeatureCall: aWollokMemberFeatureCallNode [
 WollokASTInterpreter >> visitNumberLiteral: aWollokNumberLiteralNode [ 
 
 	^ self asWollokNumber: aWollokNumberLiteralNode numberValue
+]
+
+{ #category : #'native methods' }
+WollokASTInterpreter >> wollok_lang_Number__plus: aWollokVMLiteral with: aCollection [ 
+	
+	^ memory asWollokNumber: (memory asPharoNumber: aWollokVMLiteral) +
+		(memory asPharoNumber: aCollection first)
 ]

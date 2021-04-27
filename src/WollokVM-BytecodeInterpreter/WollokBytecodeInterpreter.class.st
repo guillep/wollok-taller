@@ -1,6 +1,6 @@
 Class {
 	#name : #WollokBytecodeInterpreter,
-	#superclass : #Object,
+	#superclass : #WKAbstractInterpreter,
 	#instVars : [
 		'bindings',
 		'stack',
@@ -10,7 +10,6 @@ Class {
 		'dispatchTable',
 		'selectorMappings',
 		'program',
-		'memory',
 		'asts'
 	],
 	#category : #'WollokVM-BytecodeInterpreter'
@@ -37,7 +36,7 @@ WollokBytecodeInterpreter >> addBindingOfClass: aName fromString: aString [
 	anAST attributeNamed: #source put: aString.
 	asts at: aName put: anAST children first.
 
-	astclass := WollokVMClass new
+	astclass := WollokASTVMClass new
 		name: aName;
 		ast: anAST;
 		yourself.
@@ -64,16 +63,14 @@ WollokBytecodeInterpreter >> argumentAt: anInteger put: aValue [
 		 put: aValue
 ]
 
-{ #category : #converting }
-WollokBytecodeInterpreter >> asPharoBoolean: oop [
-
-	^ memory asPharoBoolean: oop
-]
-
-{ #category : #converting }
-WollokBytecodeInterpreter >> asWollokBoolean: aBoolean [
+{ #category : #compiling }
+WollokBytecodeInterpreter >> basicCompile: anAST [
 	
-	^ memory asWollokBoolean: aBoolean
+	^ WollokBytecodeCompiler new
+		loader: WollokReducedLoader new;
+		asts: asts;
+		compile: anAST;
+		results
 ]
 
 { #category : #'literal-decoding' }
@@ -256,20 +253,16 @@ WollokBytecodeInterpreter >> classOf: anObject [
 ]
 
 { #category : #compiling }
-WollokBytecodeInterpreter >> compile: aWollokFileNode [ 
+WollokBytecodeInterpreter >> compile: aString [
 	
-	^ WollokBytecodeCompiler new
-		loader: WollokReducedLoader new;
-		asts: asts;
-		compile: aWollokFileNode;
-		results
+	^ self basicCompile: (self parse: aString)
 ]
 
 { #category : #'name-resolution' }
 WollokBytecodeInterpreter >> compileAndInstall: astclass [
 
 	| results |
-	results := self compile: astclass ast.
+	results := self basicCompile: astclass ast.
 	results do: [ :e | self load: e ].
 	^ bindings at: astclass name
 ]
@@ -315,7 +308,7 @@ WollokBytecodeInterpreter >> decodeLiteralFrom: aReadStream [
 { #category : #'literal-decoding' }
 WollokBytecodeInterpreter >> decodeNilFrom: aReadStream [ 
 	
-	^ nil
+	^ memory nullObject
 ]
 
 { #category : #'literal-decoding' }
@@ -481,24 +474,6 @@ WollokBytecodeInterpreter >> interpretUntilReturn: parentFrame [
 	]
 ]
 
-{ #category : #testing }
-WollokBytecodeInterpreter >> isFalse: aWollokObject [
-	
-	^ aWollokObject == memory falseObject
-]
-
-{ #category : #testing }
-WollokBytecodeInterpreter >> isNull: aWollokVMObject [ 
-	
-	^ memory nullObject == aWollokVMObject
-]
-
-{ #category : #testing }
-WollokBytecodeInterpreter >> isTrue: aWollokObject [
-	
-	^ memory trueObject == aWollokObject
-]
-
 { #category : #accessing }
 WollokBytecodeInterpreter >> literalAt: anInteger [ 
 	
@@ -519,25 +494,6 @@ WollokBytecodeInterpreter >> load: bytecode [
 	stream := bytecode readStream.
 	stream next: 3 "skip type and number of literals and type of literal".
 	name := self basicDecodeStringFrom: stream.
-	
-	wollokBytecodeClass := behaviourClass new.
-	wollokBytecodeClass interpreter: self.
-	wollokBytecodeClass name: name.
-	
-	"Registering before loading to cut potential recursions"
-	bindings at: name put: wollokBytecodeClass.
-	
-	self loadBytecode: bytecode in: wollokBytecodeClass.
-	^ wollokBytecodeClass
-]
-
-{ #category : #'name-resolution' }
-WollokBytecodeInterpreter >> load: bytecode named: name [
-
-	| behaviourClass wollokBytecodeClass |
-	behaviourClass := bytecode first = 2
-		ifTrue: [ WKBytecodeClass ]
-		ifFalse: [ WKBytecodeObject ].
 	
 	wollokBytecodeClass := behaviourClass new.
 	wollokBytecodeClass interpreter: self.
@@ -583,12 +539,13 @@ WollokBytecodeInterpreter >> memory [
 	^ memory
 ]
 
-{ #category : #accessing }
-WollokBytecodeInterpreter >> memory: aMemory [
+{ #category : #compiling }
+WollokBytecodeInterpreter >> parse: aString [ 
 	
-	memory := aMemory.
-	memory interpreter: self.
-	memory initializeHeap
+	| anAST |
+	anAST := WollokParser parse: aString.
+	anAST attributeNamed: #source put: aString.
+	^ anAST
 ]
 
 { #category : #'stack-management' }
@@ -622,7 +579,7 @@ WollokBytecodeInterpreter >> program: aWKBytecodeProgram [
 
 { #category : #frames }
 WollokBytecodeInterpreter >> push: aValue [
-
+self haltIf: [ aValue isNil. ].
 	stack at: stackPointer put: aValue.
 	stackPointer := stackPointer + 1
 ]

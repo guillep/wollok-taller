@@ -13,7 +13,7 @@ Class {
 
 { #category : #accessing }
 WKBytecodeClass >> addMethod: aWKBytecodeMethod [ 
-	
+
 	methods at: (self memory asPharoString: aWKBytecodeMethod selector) asSymbol put: aWKBytecodeMethod
 ]
 
@@ -36,7 +36,7 @@ WKBytecodeClass >> decodeFrom: aReadStream [
 { #category : #loading }
 WKBytecodeClass >> finishLoadingIn: aWollokBytecodeInterpreter [ 
 	
-	self superclassName ifNil: [ ^ nil ].
+	(self memory isNull: self superclassName) ifTrue: [ ^ nil ].
 	superclass := aWollokBytecodeInterpreter resolve: (self memory asPharoString: self superclassName).
 ]
 

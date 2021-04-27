@@ -201,13 +201,8 @@ WKSemispaceMemory >> instantiateClass: aClass [
 WKSemispaceMemory >> instantiateList [
 
 	| class |
-	1halt.
 	class := self resolve: 'wollok.lang.List'.
-	^ WollokVMLiteral new
-		wollokClass: class;
-		memory: self;
-		literalValue: OrderedCollection new;
-		yourself.
+	^ self instantiateClass: class
 ]
 
 { #category : #accessing }
@@ -218,6 +213,12 @@ WKSemispaceMemory >> interpreter [
 { #category : #accessing }
 WKSemispaceMemory >> interpreter: anObject [
 	interpreter := anObject
+]
+
+{ #category : #testing }
+WKSemispaceMemory >> isNull: anInteger [ 
+	
+	^ anInteger = 0
 ]
 
 { #category : #accessing }

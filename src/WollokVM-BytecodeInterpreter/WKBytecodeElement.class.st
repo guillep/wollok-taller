@@ -19,6 +19,7 @@ WKBytecodeElement >> decodeMethodFrom: aReadStream [
 	| beginMethod selector isNative methodBytecode parameters handlers |
 	beginMethod := aReadStream next.
 	self assert: beginMethod = 5.
+
 	selector := literals at: aReadStream next.
 	isNative := aReadStream next = 1.
 	parameters := aReadStream next.

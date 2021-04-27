@@ -36,7 +36,7 @@ WollokReducedLoader >> loadClassNamed: aName in: aWollokBytecodeInterpreter [
 	anAST := WollokParser parse: source.
 	anAST attributeNamed: #source put: source.
 
-	^ WollokVMClass new
+	^ WollokASTVMClass new
 		name: aName;
 		ast: anAST;
 		yourself.

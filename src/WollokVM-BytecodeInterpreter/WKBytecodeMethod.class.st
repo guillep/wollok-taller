@@ -79,5 +79,6 @@ WKBytecodeMethod >> selector [
 
 { #category : #accessing }
 WKBytecodeMethod >> selector: anObject [
+
 	selector := anObject
 ]
