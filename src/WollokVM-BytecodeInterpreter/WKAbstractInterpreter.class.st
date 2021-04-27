@@ -50,6 +50,11 @@ WKAbstractInterpreter >> isTrue: aWollokObject [
 ]
 
 { #category : #accessing }
+WKAbstractInterpreter >> memory [
+	^ memory
+]
+
+{ #category : #accessing }
 WKAbstractInterpreter >> memory: aMemory [
 	
 	memory := aMemory.

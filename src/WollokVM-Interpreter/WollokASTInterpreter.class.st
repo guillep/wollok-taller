@@ -3,7 +3,8 @@ Class {
 	#superclass : #WKAbstractInterpreter,
 	#instVars : [
 		'bindings',
-		'selectorMappings'
+		'selectorMappings',
+		'stack'
 	],
 	#category : #'WollokVM-Interpreter'
 }
@@ -11,6 +12,7 @@ Class {
 { #category : #visiting }
 WollokASTInterpreter >> activateMethod: method withReceiver: receiver withArguments: arguments [
 
+	| result |
 	method	 native ifNotNil: [
 		^ self
 			executeNativeMethod: method
@@ -19,7 +21,13 @@ WollokASTInterpreter >> activateMethod: method withReceiver: receiver withArgume
 	].
 
 	"Manejar el caso de la ejecución normal con manejo de pila"
-	^ method acceptVisitor: self
+	self
+		pushFrameForMethod: method
+		receiver: receiver
+		arguments: arguments.
+	result := method acceptVisitor: self.
+	self popFrame.
+	^ result
 ]
 
 { #category : #bindings }
@@ -38,6 +46,7 @@ WollokASTInterpreter >> addBindingOfClass: aName fromString: aString [
 	astclass := WollokASTVMClass new
 		name: aName;
 		ast: anAST;
+		interpreter: self;
 		yourself.
 	self addBinding: aName value: astclass.
 	^ astclass
@@ -54,7 +63,7 @@ WollokASTInterpreter >> executeNativeMethod: aMethod withReceiver: aReceiver wit
 	
 	| nativeName selector mapping aClassName |
 	"Operators are not valid keyword selectors in Pharo, so map them"
-	aClassName := self wollokClassName: aReceiver.
+	aClassName := 'wollok.lang.', aMethod parent name value.
 	selector := aMethod name value.
 	mapping := selectorMappings
 		at: selector
@@ -72,6 +81,7 @@ WollokASTInterpreter >> initialize [
 
 	super initialize.
 
+	stack := Stack new.
 	bindings := Dictionary new.
 	
 	WollokReducedLoader new loadInto: self.
@@ -115,6 +125,23 @@ WollokASTInterpreter >> parse: aString [
 	^ anAST
 ]
 
+{ #category : #'stack-management' }
+WollokASTInterpreter >> popFrame [
+	
+	^ stack pop
+]
+
+{ #category : #stack }
+WollokASTInterpreter >> pushFrameForMethod: aWollokMethodDeclarationNode receiver: aReceiver arguments: aCollection [ 
+	
+	| context |
+	context := WKASTContext new.
+	context method: aWollokMethodDeclarationNode.
+	context receiver: aReceiver.
+	context arguments: aCollection.
+	stack push: context
+]
+
 { #category : #bindings }
 WollokASTInterpreter >> resolve: aString [ 
 	
@@ -125,7 +152,6 @@ WollokASTInterpreter >> resolve: aString [
 WollokASTInterpreter >> visitBinaryOperation: aBinaryOperation [
 
 	| leftResult rightResult receiver argument method |
-
 	receiver := aBinaryOperation leftOperand acceptVisitor: self.
 	argument := aBinaryOperation rightOperand acceptVisitor: self.
 	method := self lookup: aBinaryOperation operation value in: (memory classOf: receiver).
@@ -145,8 +171,14 @@ WollokASTInterpreter >> visitMemberFeatureCall: aWollokMemberFeatureCallNode [
 	receiver := aWollokMemberFeatureCallNode receiver acceptVisitor: self.
 	arguments := aWollokMemberFeatureCallNode arguments collect: [ :each |
 		each acceptVisitor: self ].
-	method := self lookup: aWollokMemberFeatureCallNode feature value in: receiver wollokClass.
+	method := self lookup: aWollokMemberFeatureCallNode feature value in: (memory classOf: receiver).
 	^ self activateMethod: method withReceiver: receiver withArguments: arguments
+]
+
+{ #category : #visiting }
+WollokASTInterpreter >> visitMethodDeclaration: aWollokMethodDeclarationNode [ 
+	
+	^ aWollokMethodDeclarationNode expression acceptVisitor: self
 ]
 
 { #category : #visiting }
@@ -155,9 +187,67 @@ WollokASTInterpreter >> visitNumberLiteral: aWollokNumberLiteralNode [
 	^ self asWollokNumber: aWollokNumberLiteralNode numberValue
 ]
 
+{ #category : #visiting }
+WollokASTInterpreter >> visitSelf: aWollokSelfNode [ 
+	
+	^ stack top receiver
+]
+
+{ #category : #visiting }
+WollokASTInterpreter >> visitStringLiteral: aWollokStringLiteralNode [ 
+	
+	^ memory asWollokString: aWollokStringLiteralNode value value
+]
+
+{ #category : #visiting }
+WollokASTInterpreter >> visitVariable: aWollokVariableNode [ 
+	
+	^ stack top readVariable: aWollokVariableNode name value
+]
+
+{ #category : #'native methods' }
+WollokASTInterpreter >> wollok_lang_Boolean__and: receiver with: aCollection [ 
+	
+	^ memory asWollokBoolean: (memory asPharoBoolean: receiver) &
+		(memory asPharoBoolean: aCollection first)
+]
+
+{ #category : #'native methods' }
+WollokASTInterpreter >> wollok_lang_Boolean__or: receiver with: aCollection [ 
+	
+	^ memory asWollokBoolean: (memory asPharoBoolean: receiver) |
+		(memory asPharoBoolean: aCollection first)
+]
+
+{ #category : #'native methods' }
+WollokASTInterpreter >> wollok_lang_Number__identical: anInteger with: aCollection [ 
+
+	^ memory asWollokBoolean: (memory asPharoNumber: anInteger) = (memory asPharoNumber: aCollection first)
+]
+
+{ #category : #'native methods' }
+WollokASTInterpreter >> wollok_lang_Number__modulo: aReceiver with: aCollection [ 
+
+	^ memory asWollokNumber: (memory asPharoNumber: aReceiver) \\
+		(memory asPharoNumber: aCollection first)
+]
+
+{ #category : #'native methods' }
+WollokASTInterpreter >> wollok_lang_Number__multiplication: aReceiver with: aCollection [ 
+
+	^ memory asWollokNumber: (memory asPharoNumber: aReceiver) *
+		(memory asPharoNumber: aCollection first)
+]
+
 { #category : #'native methods' }
 WollokASTInterpreter >> wollok_lang_Number__plus: aWollokVMLiteral with: aCollection [ 
 	
 	^ memory asWollokNumber: (memory asPharoNumber: aWollokVMLiteral) +
 		(memory asPharoNumber: aCollection first)
+]
+
+{ #category : #'native methods' }
+WollokASTInterpreter >> wollok_lang_Object__identity: receiver with: aCollection [ 
+	
+	^ (memory identityOf: receiver)
 ]

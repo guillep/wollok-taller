@@ -78,6 +78,12 @@ WKPharoHeapMemory >> fetchInstanceVariable: instanceVariableIndex ofObject: anOb
 	^ anObject wollokInstanceVariableAt: instanceVariableIndex
 ]
 
+{ #category : #'object-format' }
+WKPharoHeapMemory >> identityOf: anOop [
+	
+	^ anOop wollokIdentity
+]
+
 { #category : #initialization }
 WKPharoHeapMemory >> initializeHeap [
 	

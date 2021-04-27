@@ -157,7 +157,7 @@ WKSemispaceMemory >> fetchInstanceVariable: instanceVariableIndex ofObject: anOb
 
 { #category : #identity }
 WKSemispaceMemory >> identityOf: anOop [
-	
+
 	^ self asWollokNumber: (self slotAt: anOop + 8)
 ]
 

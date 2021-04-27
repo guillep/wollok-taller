@@ -123,6 +123,12 @@ WollokMethodDeclarationNode >> nodeVariables [
 	^ #(#expression)
 ]
 
+{ #category : #accessing }
+WollokMethodDeclarationNode >> numberOfParameters [
+	
+	^ self parameters size
+]
+
 { #category : #generated }
 WollokMethodDeclarationNode >> override [
 	^ override

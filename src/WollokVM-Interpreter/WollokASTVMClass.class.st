@@ -4,7 +4,8 @@ Class {
 	#instVars : [
 		'name',
 		'ast',
-		'methods'
+		'methods',
+		'interpreter'
 	],
 	#category : #'WollokVM-Interpreter'
 }
@@ -30,6 +31,12 @@ WollokASTVMClass >> ast: anObject [
 WollokASTVMClass >> classAST [
 	
 	^ ast elements first
+]
+
+{ #category : #accessing }
+WollokASTVMClass >> interpreter: aWollokASTInterpreter [	
+
+	interpreter := aWollokASTInterpreter
 ]
 
 { #category : #lookup }
@@ -60,6 +67,12 @@ WollokASTVMClass >> name: anObject [
 	name := anObject
 ]
 
+{ #category : #accessing }
+WollokASTVMClass >> numberOfSlots [
+	
+	^ self allVariables size
+]
+
 { #category : #printing }
 WollokASTVMClass >> printOn: aStream [
 
@@ -71,4 +84,13 @@ WollokASTVMClass >> printOn: aStream [
 		print: name;
 		nextPut: $)
 		 
+]
+
+{ #category : #accessing }
+WollokASTVMClass >> superclass [
+	
+	self name = 'wollok.lang.Object' ifTrue: [ ^ nil ].
+	self classAST superclass ifNil: [ 
+		^ interpreter resolve: 'wollok.lang.Object' ].
+	1halt.
 ]
