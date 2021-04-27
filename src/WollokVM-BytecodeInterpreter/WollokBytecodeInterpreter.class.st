@@ -44,7 +44,7 @@ WollokBytecodeInterpreter >> addBindingOfClass: aName fromString: aString [
 	^ self compileAndInstall: astclass
 ]
 
-{ #category : #'stack-management' }
+{ #category : #'stack-access' }
 WollokBytecodeInterpreter >> argumentAt: anInteger [ 
 
 	^ stack at: framePointer "Frame points to current frame"
@@ -53,7 +53,7 @@ WollokBytecodeInterpreter >> argumentAt: anInteger [
 		- 1 "Go back by 1 to some interesting value"
 ]
 
-{ #category : #'stack-management' }
+{ #category : #'stack-access' }
 WollokBytecodeInterpreter >> argumentAt: anInteger put: aValue [
 
 	^ stack at: framePointer "Frame points to current frame"
@@ -548,7 +548,7 @@ WollokBytecodeInterpreter >> parse: aString [
 	^ anAST
 ]
 
-{ #category : #'stack-management' }
+{ #category : #'stack-access' }
 WollokBytecodeInterpreter >> pop [
 	
 	stackPointer := stackPointer - 1.
@@ -556,7 +556,7 @@ WollokBytecodeInterpreter >> pop [
 	
 ]
 
-{ #category : #'stack-management' }
+{ #category : #'stack-access' }
 WollokBytecodeInterpreter >> pop: anInteger [
 	"pop a number of elements"
 	
@@ -797,7 +797,5 @@ WollokBytecodeInterpreter >> wollok_lang_String__concat [
 { #category : #'native methods' }
 WollokBytecodeInterpreter >> wollok_lang_String__toString [
 	
-	| receiver |
-	receiver := self pop.
-	self push: (memory asWollokString: (self memory asPharoString: receiver) asString)
+	"Do nothing, this would just pop the receiver and push it back..."
 ]

@@ -45,7 +45,7 @@ WKSemispaceMemory >> asPharoNumber: oop [
 	denominator := self pharoRepresentationOfInteger: (self slotAt: oop + 24).
 	scale := self pharoRepresentationOfInteger: (self slotAt: oop + 32).
 	
-	^ ScaledDecimal newFromNumber: numerator / denominator scale: scale
+	^ ScaledDecimal newFromNumber: numerator / denominator scale: (scale max: 8)
 ]
 
 { #category : #converting }

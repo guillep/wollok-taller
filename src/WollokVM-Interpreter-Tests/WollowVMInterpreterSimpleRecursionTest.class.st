@@ -15,7 +15,7 @@ class	MyClass {
 	}
 	
 	method recursiveCall(aValue) { 
-		if(aValue = 42)
+		if(aValue == 12)
 			return aValue
 		else
 			return self.recursiveCall(aValue + 1)
@@ -30,5 +30,5 @@ WollowVMInterpreterSimpleRecursionTest >> testSendingRecursiveCallReturnsCorrect
 	| anObject |
 	anObject := self interpretExpression: 'new MyClass().doSomething()'.
 	
-	self assert: (interpreter memory asPharoNumber: anObject) equals: 42
+	self assert: (interpreter memory asPharoNumber: anObject) equals: 12
 ]

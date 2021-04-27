@@ -21,7 +21,9 @@ WKPharoHeapMemory >> asPharoBoolean: oop [
 { #category : #converting }
 WKPharoHeapMemory >> asPharoNumber: aWollokObject [ 
 	
-	^ aWollokObject literalValue
+	| sd |
+	sd := aWollokObject literalValue asScaledDecimal.
+	^ ScaledDecimal newFromNumber: sd scale: (sd scale max: 8)
 ]
 
 { #category : #converting }
