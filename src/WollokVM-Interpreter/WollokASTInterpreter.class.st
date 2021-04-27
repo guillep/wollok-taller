@@ -104,9 +104,13 @@ WollokASTInterpreter >> initialize [
 WollokASTInterpreter >> interpretProgram: aFileNode [ 
 
 	| lastValue |
-
+	"Manejar el caso de la ejecución normal con manejo de pila"
+	self
+		pushFrameForMethod: aFileNode main
+		receiver: memory nullObject
+		arguments: #().
 	aFileNode main elements do: [ :e | lastValue := e acceptVisitor: self ].
-
+	self popFrame.
 	^ lastValue	
 ]
 
@@ -139,6 +143,7 @@ WollokASTInterpreter >> pushFrameForMethod: aWollokMethodDeclarationNode receive
 	context method: aWollokMethodDeclarationNode.
 	context receiver: aReceiver.
 	context arguments: aCollection.
+	context interpreter: self.
 	stack push: context
 ]
 
@@ -192,6 +197,12 @@ WollokASTInterpreter >> visitConstructorCall: aWollokConstructorCallNode [
 
 	class := memory resolve: aWollokConstructorCallNode classRef identifiers value first value.
 	receiver := memory instantiateClass: class.
+
+	class classAST variables doWithIndex: [ :e :anIndex | | value |
+		e right ifNotNil: [
+			value := e right acceptVisitor: self.
+			memory storeInstanceVariable: anIndex ofObject: receiver withValue: value.
+		] ].
 	
 	method := self lookup: 'initialize' in: class.
 	self activateMethod: method withReceiver: receiver withArguments: #().

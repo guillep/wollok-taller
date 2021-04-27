@@ -7,7 +7,9 @@ Class {
 		'arguments',
 		'temporaries',
 		'returned',
-		'returnValue'
+		'returnValue',
+		'parent',
+		'interpreter'
 	],
 	#category : #'WollokVM-Interpreter'
 }
@@ -37,6 +39,11 @@ WKASTContext >> initialize [
 ]
 
 { #category : #accessing }
+WKASTContext >> interpreter: aWollokASTInterpreter [ 
+	interpreter := aWollokASTInterpreter
+]
+
+{ #category : #accessing }
 WKASTContext >> method [
 	^ method
 ]
@@ -53,14 +60,19 @@ WKASTContext >> parameterNames [
 ]
 
 { #category : #'name-resolution' }
-WKASTContext >> readVariable: aString [ 
+WKASTContext >> readVariable: aString [
 	
 	| index |
 	temporaries at: aString ifPresent: [ :v | ^ v ].
 	
 	index := self parameterNames indexOf: aString.
-	self haltIf: index = 0.
-	^ arguments at: index
+	index > 0 ifTrue: [ ^ arguments at: index ].
+	
+	^ (WKObjectScope new
+		object: receiver;
+		interpreter: interpreter;
+		yourself)
+			readVariable: aString
 ]
 
 { #category : #accessing }
@@ -96,7 +108,12 @@ WKASTContext >> scopeDefining: aString [
 	
 	(temporaries includesKey: aString) ifTrue: [ ^ self ].
 	(self parameterNames includes: aString) ifTrue: [ ^self ].
-	self halt.
+	
+	^ (WKObjectScope new
+		object: receiver;
+		interpreter: interpreter;
+		yourself)
+			scopeDefining: aString
 ]
 
 { #category : #'name resolution' }

@@ -13,8 +13,7 @@ Class {
 { #category : #accessing }
 WollokASTVMClass >> allVariables [
 
-	self flag: #todo.
-	^ #()
+	^ self classAST variables collect: [ :e | e variable name value ]
 ]
 
 { #category : #accessing }
