@@ -25,6 +25,12 @@ AbstractWollokVMInterpreterTest class >> testParameters [
 		yourself
 ]
 
+{ #category : #utils }
+AbstractWollokVMInterpreterTest >> defaultTimeLimit [
+
+	^ 20 seconds
+]
+
 { #category : #running }
 AbstractWollokVMInterpreterTest >> interpretExpression: aString [
 

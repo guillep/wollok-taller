@@ -13,7 +13,8 @@ Class {
 		'classTable',
 		'nextFreeClass',
 		'nextIdentityHash',
-		'limit'
+		'limit',
+		'spaceSize'
 	],
 	#category : #'WollokVM-Memory'
 }
@@ -24,7 +25,8 @@ WKSemispaceMemory >> allocateSlots: anInteger [
 	| allocatedOop maybeNextFree |
 	allocatedOop := nextFree.
 	maybeNextFree := nextFree + (anInteger * 8).
-	maybeNextFree > limit ifTrue: [ self error: 'no more space!' ].
+	maybeNextFree > limit ifTrue: [ 
+		self garbageCollect ].
 	nextFree := maybeNextFree.
 	^ allocatedOop
 ]
@@ -41,9 +43,9 @@ WKSemispaceMemory >> asPharoBoolean: oop [
 WKSemispaceMemory >> asPharoNumber: oop [
 	
 	| numerator denominator scale |
-	numerator := self pharoRepresentationOfInteger: (self slotAt: oop + 16).
-	denominator := self pharoRepresentationOfInteger: (self slotAt: oop + 24).
-	scale := self pharoRepresentationOfInteger: (self slotAt: oop + 32).
+	numerator := self pharoRepresentationOfInteger: (self slotAt: oop + 24).
+	denominator := self pharoRepresentationOfInteger: (self slotAt: oop + 32).
+	scale := self pharoRepresentationOfInteger: (self slotAt: oop + 40).
 	
 	^ ScaledDecimal newFromNumber: numerator / denominator scale: (scale max: 8)
 ]
@@ -52,11 +54,11 @@ WKSemispaceMemory >> asPharoNumber: oop [
 WKSemispaceMemory >> asPharoString: anOop [ 
 
 	| size |
-	size := self slotAt: anOop + 16.
+	size := self slotAt: anOop + 24.
 
 	^ (ByteArray streamContents: [ :stream |
 		0 to: size - 1 do: [ :i |
-			stream nextPut: (self byteAt: anOop + 24 + i) ] ])
+			stream nextPut: (self byteAt: anOop + 32 + i) ] ])
 				utf8Decoded
 ]
 
@@ -76,31 +78,36 @@ WKSemispaceMemory >> asWollokNumber: aPharoNumber [
 	class := self resolve: 'wollok.lang.Number'.
 	
 	oop := self allocateSlots: 3 "numerator, denominator, scale" + 2 "for the header and identity hash".
+	self haltIf: (classTable indexOf: class) = 0.
 	self slotAt: oop put: (classTable indexOf: class).
 	self slotAt: oop + 8 put: nextIdentityHash.
 	nextIdentityHash := nextIdentityHash + 1.
+	self slotAt: oop + 16 put: 3 + 3 "size".
 	
-	self slotAt: oop + 16 put: (self binaryRepresentationOfInteger: scaledDecimal numerator).
-	self slotAt: oop + 24 put: (self binaryRepresentationOfInteger: scaledDecimal denominator).
-	self slotAt: oop + 32 put: (self binaryRepresentationOfInteger: scaledDecimal scale).
+	self slotAt: oop + 24 put: (self binaryRepresentationOfInteger: scaledDecimal numerator).
+	self slotAt: oop + 32 put: (self binaryRepresentationOfInteger: scaledDecimal denominator).
+	self slotAt: oop + 40 put: (self binaryRepresentationOfInteger: scaledDecimal scale).
 	^ oop
 ]
 
 { #category : #converting }
 WKSemispaceMemory >> asWollokString: aString [ 
 
-	| oop class utf8String |
+	| oop class utf8String slotsForBytes |
 	utf8String := aString utf8Encoded.
 	class := self resolve: 'wollok.lang.String'.
-	oop := self allocateSlots: 3 "class index, hash, size" + ((utf8String size alignedTo: 8) // 8).
+	slotsForBytes := (utf8String size alignedTo: 8) // 8.
+	oop := self allocateSlots: 4 "class index, hash, size" + slotsForBytes.
 
 	self slotAt: oop put: (classTable indexOf: class).
+		self haltIf: (classTable indexOf: class) = 0.
 	self slotAt: oop + 8 put: nextIdentityHash.
 	nextIdentityHash := nextIdentityHash + 1.
-	self slotAt: oop + 16 put: utf8String size.
+	self slotAt: oop + 16 put: 3 + 1 +  slotsForBytes "size".
+	self slotAt: oop + 24 put: utf8String size.
 
 	utf8String withIndexDo: [ :byte : index |
-		self byteAt: oop + 24 + index - 1 put: byte ].
+		self byteAt: oop + 32 + index - 1 put: byte ].
 	^ oop
 ]
 
@@ -133,6 +140,34 @@ WKSemispaceMemory >> classOf: anOop [
 	^ classTable at: classIndex
 ]
 
+{ #category : #'garbage collection' }
+WKSemispaceMemory >> copyAndForward: anOop [ 
+	
+	| slots newOop |
+	newOop := nextFree.
+	slots := self slotAt: anOop + 16.
+
+	"Copy the slots"
+	0 to: slots - 1 do: [ :i |
+		self slotAt: newOop + (i * 8) put: (self slotAt: anOop + (i * 8))
+	].
+
+	"Forward the present object to the future object"
+	self slotAt: anOop put: self copyMark.
+	self slotAt: anOop + 16 put: newOop.
+
+	"Advance the free pointer"
+	nextFree := nextFree + (slots * 8).
+	
+	^ newOop
+]
+
+{ #category : #'garbage collection' }
+WKSemispaceMemory >> copyMark [
+
+	^ 16rFFFFFFFFFFFFFFFF "Marker?"
+]
+
 { #category : #accessing }
 WKSemispaceMemory >> falseObject [
 	^ falseObject
@@ -155,6 +190,28 @@ WKSemispaceMemory >> fetchInstanceVariable: instanceVariableIndex ofObject: anOb
 	^ self slotAt: anObject + (instanceVariableIndex * 8)
 ]
 
+{ #category : #'garbage collection' }
+WKSemispaceMemory >> garbageCollect [
+	
+	| oldFuture |
+	nextFree := future.
+	
+	trueObject := self copyAndForward: trueObject.
+	falseObject := self copyAndForward: falseObject.
+	classTable do: [ :e |
+		e ifNotNil: [
+			e literals do: [ :l | 
+				l ifNotNil: [ :el | self copyAndForward: el ] ] ] ].
+	
+	self scanFuture.
+
+	"Swap!"
+	oldFuture := future.
+	future := present.
+	present := oldFuture.
+	limit := present + spaceSize - 1.
+]
+
 { #category : #identity }
 WKSemispaceMemory >> identityOf: anOop [
 
@@ -170,10 +227,11 @@ WKSemispaceMemory >> initializeHeap [
 
 	"0 is a special address... We start at 8"
 	present := 8.
-	memory := ByteArray new: 1024 * 20  "20KB seems enough" + present.
-	future := memory size / 2.
+	spaceSize := 1024 * 8.
+	memory := ByteArray new: (spaceSize * 2) + present.
+	future := spaceSize.
 	
-	limit := future - 1.
+	limit := present + spaceSize - 1.
 	nextFree := present.
 
 	nullObject := 0 "some invalid reference".	
@@ -185,11 +243,14 @@ WKSemispaceMemory >> initializeHeap [
 { #category : #allocation }
 WKSemispaceMemory >> instantiateClass: aClass [
 
-	| oop |
-	oop := self allocateSlots: aClass numberOfSlots + 2 "for the header and identity hash".
+	| oop classIndex |
+	oop := self allocateSlots: aClass numberOfSlots + 3 "for the header, identity hash and size".
+	classIndex := classTable indexOf: aClass.
+	self haltIf: classIndex = 0.
 	
-	self slotAt: oop put: (classTable indexOf: aClass).
+	self slotAt: oop put: classIndex.
 	self slotAt: oop + 8 put: nextIdentityHash.
+	self slotAt: oop + 16 put: 3 + aClass numberOfSlots.
 	
 	nextIdentityHash := nextIdentityHash + 1.
 	1 to: aClass numberOfSlots do: [ :i |
@@ -254,6 +315,36 @@ WKSemispaceMemory >> resolve: aString [
 	^ class
 ]
 
+{ #category : #'garbage collection' }
+WKSemispaceMemory >> scanFuture [
+	
+	| scan sizeOfObject |
+	scan := future.
+	[ scan < nextFree ] whileTrue: [
+		self scanObject: scan.
+		sizeOfObject := self slotAt: scan + 16.
+		scan := scan + (sizeOfObject * 8) ]
+]
+
+{ #category : #'garbage collection' }
+WKSemispaceMemory >> scanObject: oop [ 
+
+	| pointerSlots reference |
+	pointerSlots := (self classOf: oop) numberOfSlots.
+	0 to: pointerSlots - 1 do: [ :i |
+		reference := self
+			fetchInstanceVariable: i + 3 "skip class, identity hash, size"
+			ofObject: oop.
+		(self isCopied: reference)
+			ifFalse: [ reference := self copyAndForward: reference ].
+		self
+			storeInstanceVariable: i + 3 "skip class, identity hash, size"
+			ofObject: oop
+			withValue: reference ]
+
+	
+]
+
 { #category : #'memory-access' }
 WKSemispaceMemory >> slotAt: address [ 
 	"Check allignment"
@@ -271,7 +362,7 @@ WKSemispaceMemory >> slotAt: address put: aValue [
 { #category : #'object-format' }
 WKSemispaceMemory >> storeInstanceVariable: anIndex ofObject: anOop withValue: aValue [ 
 	
-	self slotAt: anOop + (anIndex * 8) put: aValue
+	self slotAt: anOop + (2 + anIndex * 8) put: aValue
 ]
 
 { #category : #accessing }
