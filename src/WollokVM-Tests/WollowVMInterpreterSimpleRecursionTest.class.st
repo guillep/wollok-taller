@@ -1,0 +1,34 @@
+Class {
+	#name : #WollowVMInterpreterSimpleRecursionTest,
+	#superclass : #AbstractWollokVMInterpreterTest,
+	#category : #'WollokVM-Tests-4.Stack'
+}
+
+{ #category : #running }
+WollowVMInterpreterSimpleRecursionTest >> setUp [ 
+
+	super setUp.
+	interpreter addBindingOfClass: 'MyClass' fromString: '
+class	MyClass {  
+	method doSomething(){
+		return self.recursiveCall(0)
+	}
+	
+	method recursiveCall(aValue) { 
+		if(aValue == 12)
+			return aValue
+		else
+			return self.recursiveCall(aValue + 1)
+	}
+}
+'.
+]
+
+{ #category : #tests }
+WollowVMInterpreterSimpleRecursionTest >> testSendingRecursiveCallReturnsCorrectValue [
+
+	| anObject |
+	anObject := self interpretExpression: 'new MyClass().doSomething()'.
+	
+	self assert: (interpreter memory asPharoNumber: anObject) equals: 12
+]
