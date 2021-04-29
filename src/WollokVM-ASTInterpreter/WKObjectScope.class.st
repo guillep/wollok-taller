@@ -8,6 +8,12 @@ Class {
 	#category : #'WollokVM-ASTInterpreter'
 }
 
+{ #category : #'name resolution' }
+WKObjectScope >> allVariablesOf: anObject [
+	
+	^ (interpreter memory classOf: object) allVariables
+]
+
 { #category : #accessing }
 WKObjectScope >> interpreter [
 	^ interpreter
@@ -32,14 +38,14 @@ WKObjectScope >> object: anObject [
 WKObjectScope >> readVariable: aString [ 
 	
 	| index |
-	index := (interpreter memory classOf: object) allVariables indexOf: aString.
+	index := (self allVariablesOf: object) indexOf: aString.
 	^ interpreter memory fetchInstanceVariable: index ofObject: object
 ]
 
 { #category : #'name resolution' }
 WKObjectScope >> scopeDefining: aString [ 
 	
-	((interpreter memory classOf: object) allVariables includes: aString)
+	((self allVariablesOf: object) includes: aString)
 		ifTrue: [ ^ self ].
 	self halt
 ]
@@ -48,6 +54,6 @@ WKObjectScope >> scopeDefining: aString [
 WKObjectScope >> writeVariable: aString withValue: aValue [ 
 
 	| index |
-	index := (interpreter memory classOf: object) allVariables indexOf: aString.
+	index := (self allVariablesOf: object) indexOf: aString.
 	^ interpreter memory storeInstanceVariable: index ofObject: object withValue: aValue
 ]

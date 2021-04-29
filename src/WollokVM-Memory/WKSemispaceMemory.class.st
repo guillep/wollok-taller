@@ -187,7 +187,7 @@ WKSemispaceMemory >> fetchClassOf: anOop [
 { #category : #'object-format' }
 WKSemispaceMemory >> fetchInstanceVariable: instanceVariableIndex ofObject: anObject [
 	
-	^ self slotAt: anObject + (instanceVariableIndex * 8)
+	^ self slotAt: anObject + (2 + instanceVariableIndex * 8)
 ]
 
 { #category : #'garbage collection' }

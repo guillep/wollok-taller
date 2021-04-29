@@ -90,6 +90,6 @@ WollokASTVMClass >> superclass [
 	
 	self name = 'wollok.lang.Object' ifTrue: [ ^ nil ].
 	self classAST superclass ifNil: [ 
-		^ interpreter resolve: 'wollok.lang.Object' ].
-	1halt.
+		^ interpreter memory resolve: 'wollok.lang.Object' ].
+	^ interpreter memory resolve: self classAST superclass identifiers first value
 ]
