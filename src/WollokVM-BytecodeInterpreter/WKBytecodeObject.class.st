@@ -5,10 +5,18 @@ Class {
 }
 
 { #category : #loading }
+WKBytecodeObject >> decodeFrom: aReadStream [ 
+	
+	"Read Methods"
+	numberOfSlots := aReadStream next.
+]
+
+{ #category : #loading }
 WKBytecodeObject >> finishLoadingIn: aWollokBytecodeInterpreter [ 
 
 	| framePointerBefore m instance |
 	super finishLoadingIn: aWollokBytecodeInterpreter.
+	interpreter memory registerClass: self.
 	instance := self instantiate.
 	interpreter registerGlobal: instance atName: self name.
 	

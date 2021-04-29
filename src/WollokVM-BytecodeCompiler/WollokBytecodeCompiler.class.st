@@ -369,6 +369,7 @@ WollokBytecodeCompiler >> visitNamedObject: aWollokNamedObjectNode [
 
 	compilationClass := aWollokNamedObjectNode.
 	builder forObject.
+	builder numberOfSlots: (self allVariablesOf: aWollokNamedObjectNode) size.
 	builder addLiteral: aWollokNamedObjectNode name value.
 	self buildBehavior: aWollokNamedObjectNode
 ]
@@ -394,6 +395,7 @@ WollokBytecodeCompiler >> visitObjectLiteral: aWollokObjectLiteralNode [
 	compiler := WollokBytecodeCompiler new.
 	compiler loader: WollokReducedLoader new.
 	results addAll: (compiler
+		asts: asts;
 		buildClass: aWollokObjectLiteralNode
 		named: anonimousClassName) results.
 

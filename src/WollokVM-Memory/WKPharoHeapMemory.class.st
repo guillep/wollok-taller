@@ -151,6 +151,12 @@ WKPharoHeapMemory >> nullObject: anObject [
 	nullObject := anObject
 ]
 
+{ #category : #registration }
+WKPharoHeapMemory >> registerClass: aWKBytecodeObject [ 
+	
+	"Nothing"
+]
+
 { #category : #'name resolution' }
 WKPharoHeapMemory >> resolve: aString [ 
 	

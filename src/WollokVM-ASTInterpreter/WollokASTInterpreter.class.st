@@ -107,7 +107,7 @@ WollokASTInterpreter >> interpretProgram: aFileNode [
 	"Manejar el caso de la ejecución normal con manejo de pila"
 	self
 		pushFrameForMethod: aFileNode main
-		receiver: memory nullObject
+		receiver: (memory trueObject)
 		arguments: #().
 	aFileNode main elements do: [ :e | lastValue := e acceptVisitor: self ].
 	self popFrame.

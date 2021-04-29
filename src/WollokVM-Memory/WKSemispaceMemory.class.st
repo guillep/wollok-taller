@@ -303,6 +303,14 @@ WKSemispaceMemory >> pharoRepresentationOfInteger: anInteger [
 ]
 
 { #category : #'name resolution' }
+WKSemispaceMemory >> registerClass: class [
+
+	classTable at: nextFreeClass put: class.
+	nextFreeClass := nextFreeClass + 1.
+	^ class
+]
+
+{ #category : #'name resolution' }
 WKSemispaceMemory >> resolve: aString [ 
 	
 	| class |	
@@ -310,9 +318,7 @@ WKSemispaceMemory >> resolve: aString [
 	(classTable includes: class)
 		ifTrue: [ ^ class ].
 	
-	classTable at: nextFreeClass put: class.
-	nextFreeClass := nextFreeClass + 1.
-	^ class
+	^ self registerClass: class
 ]
 
 { #category : #'garbage collection' }

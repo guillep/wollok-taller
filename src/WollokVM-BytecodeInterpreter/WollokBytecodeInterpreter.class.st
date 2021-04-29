@@ -158,7 +158,7 @@ WollokBytecodeInterpreter >> bytecodePushGlobal [
 	
 	| literalIndex globalName |
 	literalIndex := self fetchNextBytecode.
-	globalName := (self literalAt: literalIndex) literalValue asSymbol.
+	globalName := (memory asPharoString: (self literalAt: literalIndex)) asSymbol.
 	
 	self push: (bindings at: globalName)
 ]

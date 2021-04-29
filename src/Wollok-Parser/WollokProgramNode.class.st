@@ -67,6 +67,12 @@ WollokProgramNode >> name: aSmaCCToken [
 	name := aSmaCCToken
 ]
 
+{ #category : #accessing }
+WollokProgramNode >> parameters [
+	"No parameters"
+	^ #()
+]
+
 { #category : #generated }
 WollokProgramNode >> programToken [
 	^ programToken
