@@ -37,7 +37,7 @@ WKBytecodeClass >> decodeFrom: aReadStream [
 WKBytecodeClass >> finishLoadingIn: aWollokBytecodeInterpreter [ 
 	
 	(self memory isNull: self superclassName) ifTrue: [ ^ nil ].
-	superclass := aWollokBytecodeInterpreter resolve: (self memory asPharoString: self superclassName).
+	superclass := aWollokBytecodeInterpreter loadName: (self memory asPharoString: self superclassName).
 ]
 
 { #category : #accessing }

@@ -11,6 +11,7 @@ Class {
 { #category : #'name resolution' }
 WKObjectScope >> allVariablesOf: anObject [
 	
+	(interpreter memory classOf: object) ifNil: [ ^ #() ].
 	^ (interpreter memory classOf: object) allVariables
 ]
 

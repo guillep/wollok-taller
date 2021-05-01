@@ -20,7 +20,7 @@ AbstractWollokVMInterpreterTest class >> isAbstract [
 AbstractWollokVMInterpreterTest class >> testParameters [
 
 	^ ParametrizedTestMatrix new
-		forSelector: #interpreterClass addOptions: { WollokASTInterpreter . WollokBytecodeInterpreter };
+		forSelector: #interpreterClass addOptions: { WollokMLBytecodeInterpreter . WollokASTInterpreter . WollokBytecodeInterpreter };
 		forSelector: #memoryClass addOptions: { WKPharoHeapMemory . WKSemispaceMemory };
 		yourself
 ]

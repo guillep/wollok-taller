@@ -184,3 +184,9 @@ WKPharoHeapMemory >> wollokClassName: aWollokObject [
 	
 	^ (self classOf: aWollokObject) name
 ]
+
+{ #category : #accessing }
+WKPharoHeapMemory >> wordSize [
+	
+	^ 8
+]
