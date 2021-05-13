@@ -43,6 +43,7 @@ WollokBytecodeCompiler >> assign: right toVariable: left [
 	
 	| ivIndex |
 	right acceptVisitor: self.
+
 	temporaryIndexes
 		at: left name value
 		ifPresent: [ :index | 
@@ -246,6 +247,8 @@ WollokBytecodeCompiler >> visitBlockExpression: aWollokBlockExpressionNode [
 	aWollokBlockExpressionNode expressions
 		ifEmpty: [ ^ builder pushSelf ].
 	
+	"Pop after each statement except the last one.
+	separatedBy only executes in-between elements"
 	aWollokBlockExpressionNode expressions
 		do: [ :e | e acceptVisitor: self ]
 		separatedBy: [ builder pop ]

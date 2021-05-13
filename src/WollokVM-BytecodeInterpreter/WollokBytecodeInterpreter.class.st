@@ -118,7 +118,8 @@ WollokBytecodeInterpreter >> bytecodeNew [
 	literalIndex := self fetchNextBytecode.
 	className := self literalAt: literalIndex.
 	class := memory resolve: (self memory asPharoString: className).
-	self push: class instantiate
+	
+	self push: (memory instantiateClass: class)
 ]
 
 { #category : #bytecode }
@@ -219,10 +220,9 @@ WollokBytecodeInterpreter >> bytecodeSend [
 { #category : #bytecode }
 WollokBytecodeInterpreter >> bytecodeSendSuper [
 	
-	| literalIndex selector numberOfArguments receiver method |
+	| selector method |
 	selector := self currentMethod selector.
 
-	receiver := self receiver.
 	method := self
 		lookup: selector
 		fromClass: self currentMethod bytecodeClass superclass.
@@ -232,7 +232,7 @@ WollokBytecodeInterpreter >> bytecodeSendSuper [
 { #category : #bytecode }
 WollokBytecodeInterpreter >> bytecodeThrow [
 	
-	| exception currentFrame currentIP |
+	| exception |
 	exception := self stackAt: 0.
 	[framePointer = -1 "At end"] whileFalse: [
 		(self frame: framePointer ip: programCounter handlesException: exception)
@@ -579,7 +579,7 @@ WollokBytecodeInterpreter >> program: aWKBytecodeProgram [
 
 { #category : #frames }
 WollokBytecodeInterpreter >> push: aValue [
-self haltIf: [ aValue isNil. ].
+
 	stack at: stackPointer put: aValue.
 	stackPointer := stackPointer + 1
 ]

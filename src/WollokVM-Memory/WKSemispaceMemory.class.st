@@ -78,7 +78,7 @@ WKSemispaceMemory >> asWollokNumber: aPharoNumber [
 	class := self resolve: 'wollok.lang.Number'.
 	
 	oop := self allocateSlots: 3 "numerator, denominator, scale" + 2 "for the header and identity hash".
-	self haltIf: (classTable indexOf: class) = 0.
+
 	self slotAt: oop put: (classTable indexOf: class).
 	self slotAt: oop + 8 put: nextIdentityHash.
 	nextIdentityHash := nextIdentityHash + 1.
@@ -201,7 +201,11 @@ WKSemispaceMemory >> garbageCollect [
 	classTable do: [ :e |
 		e ifNotNil: [
 			e literals do: [ :l | 
-				l ifNotNil: [ :el | self copyAndForward: el ] ] ] ].
+				l ifNotNil: [ :el | 
+					"Hay que mappear los literales!!!!"
+					self copyAndForward: el ] ] ] ].
+	
+	"stack!!!"
 	
 	self scanFuture.
 
@@ -342,6 +346,7 @@ WKSemispaceMemory >> scanObject: oop [
 			fetchInstanceVariable: i + 3 "skip class, identity hash, size"
 			ofObject: oop.
 		(self isCopied: reference)
+			ifTrue: [ "get copy reference" self halt ]
 			ifFalse: [ reference := self copyAndForward: reference ].
 		self
 			storeInstanceVariable: i + 3 "skip class, identity hash, size"
