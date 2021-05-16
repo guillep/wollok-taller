@@ -1,6 +1,6 @@
 Class {
 	#name : #WKSemispaceMemory,
-	#superclass : #Object,
+	#superclass : #MLAbstractMemory,
 	#instVars : [
 		'trueObject',
 		'falseObject',
@@ -18,6 +18,18 @@ Class {
 	],
 	#category : #'WollokVM-Memory'
 }
+
+{ #category : #initialization }
+WKSemispaceMemory class >> initializeWithOptions: optionsDictionary [
+
+	BytesPerWord := BytesPerOop := self wordSize
+]
+
+{ #category : #accessing }
+WKSemispaceMemory class >> wordSize [
+
+	^ 8 "bytes"
+]
 
 { #category : #allocating }
 WKSemispaceMemory >> allocateSlots: anInteger [ 
@@ -354,6 +366,7 @@ WKSemispaceMemory >> scanObject: oop [
 { #category : #'memory-access' }
 WKSemispaceMemory >> slotAt: address [ 
 	"Check allignment"
+	<doNotGenerate>
 	self assert: address \\ 8 = 0.
 	^ memory integerAt: address + 1 size: 8 signed: false
 ]
@@ -361,6 +374,7 @@ WKSemispaceMemory >> slotAt: address [
 { #category : #'memory-access' }
 WKSemispaceMemory >> slotAt: address put: aValue [
 	"Check allignment"
+	<doNotGenerate>
 	self assert: address \\ 8 = 0.
 	memory integerAt: address + 1 put: aValue size: 8 signed: false.
 ]

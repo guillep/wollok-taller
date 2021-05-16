@@ -1,11 +1,30 @@
 Class {
 	#name : #WKBytecodeElement,
-	#superclass : #Object,
+	#superclass : #VMStructType,
 	#instVars : [
 		'literals'
 	],
 	#category : #'WollokVM-BytecodeInterpreter'
 }
+
+{ #category : #translation }
+WKBytecodeElement class >> instVarNamesAndTypesForTranslationDo: aBinaryBlock [
+	"enumerate aBinaryBlock with the names and C type strings for the inst vars to include in a BytecodeDescriptor struct."
+	self instVarNames do:
+		[:ivn|
+		aBinaryBlock
+			value: ivn
+			value: (ivn caseOf: {
+							['literals']			->	[#('sqInt *')]
+						}
+						otherwise: [ 1halt ])]
+]
+
+{ #category : #accessing }
+WKBytecodeElement >> classLiteralAt: anInteger [
+
+	^ literals at: anInteger
+]
 
 { #category : #decoding }
 WKBytecodeElement >> decodeFrom: aReadStream [
@@ -55,12 +74,6 @@ WKBytecodeElement >> decodeMethodFrom: aReadStream [
 WKBytecodeElement >> finishLoadingIn: aWollokBytecodeInterpreter [
 
 	self subclassResponsibility
-]
-
-{ #category : #accessing }
-WKBytecodeElement >> literalAt: anInteger [
-
-	^ literals at: anInteger
 ]
 
 { #category : #accessing }

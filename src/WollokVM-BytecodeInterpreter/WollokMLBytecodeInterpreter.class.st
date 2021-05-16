@@ -1,3 +1,20 @@
+"
+```
+out := FileSystem workingDirectory / 'out'.
+
+vmm := (VMMaker
+	makerFor: WollokMLBytecodeInterpreter
+	and: nil
+	with: #( #ObjectMemory WKSemispaceMemory )
+	to: out
+	platformDir: out
+	including: #()
+	configuration: VMMakerConfiguration)
+		stopOnErrors: false.
+	
+vmm generateInterpreterFile.
+```
+"
 Class {
 	#name : #WollokMLBytecodeInterpreter,
 	#superclass : #MLAbstractInterpreter,
@@ -12,16 +29,22 @@ Class {
 }
 
 { #category : #accessing }
+WollokMLBytecodeInterpreter class >> ancilliaryClasses [
+
+	^ { WKBytecodeClass . WKBytecodeMethod }
+]
+
+{ #category : #accessing }
 WollokMLBytecodeInterpreter class >> bytecodeMappings [
 
 	^ #(
-		(0  0) "unused"
+		(0  unknownBytecode)
 		(1  bytecodePushLiteral)
 		(2  bytecodeSend)
 		(3  bytecodePop)
 		(4  bytecodeReturn)
-		(5  0) "unused"
-		(6  0) "unused"
+		(5  unknownBytecode)
+		(6  unknownBytecode)
 		(7  bytecodePushSelf)
 		(8  bytecodePushTemporary)
 		(9  bytecodeJumpFalse)
@@ -39,21 +62,45 @@ WollokMLBytecodeInterpreter class >> bytecodeMappings [
 ]
 
 { #category : #accessing }
+WollokMLBytecodeInterpreter class >> initializeWithOptions: optionsDictionary [
+
+	super initializeWithOptions: optionsDictionary.
+	self initializeBytecodeTable.
+]
+
+{ #category : #accessing }
+WollokMLBytecodeInterpreter class >> isNonArgumentImplicitReceiverVariableName: aString [
+	
+	^#('objectMemory') includes: aString
+]
+
+{ #category : #accessing }
+WollokMLBytecodeInterpreter class >> namesOfVariablesToLocalize [
+
+	^#(currentBytecode localFP localIP localSP localReturnValue)
+]
+
+{ #category : #accessing }
 WollokMLBytecodeInterpreter class >> numberOfBytecodes [
 	
 	^ 20
 ]
 
+{ #category : #accessing }
+WollokMLBytecodeInterpreter class >> prepareToBeAddedToCodeGenerator: aCodeGen [
+	"It is either this or scan cmacro methods for selectors."
+	aCodeGen retainMethods: #(interpret)
+]
+
 { #category : #activation }
 WollokMLBytecodeInterpreter >> activateMethod: aWKBytecodeMethod [ 
-	
-	| programCounter |
+
 	aWKBytecodeMethod isNative ifTrue: [ | className |
 		className := aWKBytecodeMethod bytecodeClass name.
 		^ self executeNativeMethodFrom: className selector: aWKBytecodeMethod selector ].
 	
-	self push: framePointer.
-	self push: programCounter.
+	self push: localFP.
+	self push: localIP.
 	
 	self createFrameForMethod: aWKBytecodeMethod.
 ]
@@ -67,7 +114,7 @@ WollokMLBytecodeInterpreter >> addBindingOfClass: aName fromString: aString [
 { #category : #'stack-access' }
 WollokMLBytecodeInterpreter >> argumentAt: anInteger [ 
 
-	^ stack at: framePointer "Frame points to current frame"
+	^ stack at: localFP "Frame points to current frame"
 		- 2 "Skip saved frame pointer and saved instruction pointer"
 		- (self currentMethod numberOfParameters - anInteger) "Skip other arguments"
 		- 1 "Go back by 1 to some interesting value"
@@ -76,7 +123,7 @@ WollokMLBytecodeInterpreter >> argumentAt: anInteger [
 { #category : #'stack-access' }
 WollokMLBytecodeInterpreter >> argumentAt: anInteger put: aValue [
 
-	^ stack at: framePointer "Frame points to current frame"
+	^ stack at: localFP "Frame points to current frame"
 		- 2 "Skip saved frame pointer and saved instruction pointer"
 		- (self currentMethod numberOfParameters - anInteger) "Skip other arguments"
 		- 1 "Go back by 1 to some interesting value"
@@ -97,8 +144,7 @@ WollokMLBytecodeInterpreter >> bytecodeJump [
 	
 	| offset |
 	offset := self fetchNextBytecode.
-
-	programCounter := programCounter + offset - 2
+	localIP := localIP + offset - 2
 ]
 
 { #category : #bytecode }
@@ -107,9 +153,8 @@ WollokMLBytecodeInterpreter >> bytecodeJumpFalse [
 	| offset boolean |
 	boolean := self pop.
 	offset := self fetchNextBytecode.
-
-	(self isFalse: boolean) ifTrue: [
-		programCounter := programCounter + offset - 2
+	(objectMemory isFalse: boolean) ifTrue: [
+		localIP := localIP + offset - 2
 	]
 ]
 
@@ -119,14 +164,14 @@ WollokMLBytecodeInterpreter >> bytecodeNew [
 	| literalIndex className class |
 	literalIndex := self fetchNextBytecode.
 	className := self literalAt: literalIndex.
-	class := memory resolve: (self memory asPharoString: className).
+	class := objectMemory resolve: (self memory asPharoString: className).
 	self push: class instantiate
 ]
 
 { #category : #bytecode }
 WollokMLBytecodeInterpreter >> bytecodeNewList [
 
-	self push: memory instantiateList
+	self push: objectMemory instantiateList
 ]
 
 { #category : #bytecode }
@@ -141,7 +186,7 @@ WollokMLBytecodeInterpreter >> bytecodePopIntoInstanceVariable [
 	| value instanceVariableIndex |
 	value := self pop.
 	instanceVariableIndex := self fetchNextBytecode.
-	memory storeInstanceVariable: instanceVariableIndex ofObject: self receiver withValue: value
+	objectMemory storeInstanceVariable: instanceVariableIndex ofObject: self receiver withValue: value
 ]
 
 { #category : #bytecode }
@@ -160,7 +205,7 @@ WollokMLBytecodeInterpreter >> bytecodePushGlobal [
 	
 	| literalIndex globalName |
 	literalIndex := self fetchNextBytecode.
-	globalName := (memory asPharoString: (self literalAt: literalIndex)) asSymbol.
+	globalName := (objectMemory asPharoString: (self literalAt: literalIndex)).
 	
 	self push: (bindings at: globalName)
 ]
@@ -168,7 +213,7 @@ WollokMLBytecodeInterpreter >> bytecodePushGlobal [
 { #category : #bytecode }
 WollokMLBytecodeInterpreter >> bytecodePushInstanceVariable [
 	
-	self push: (memory fetchInstanceVariable: self fetchNextBytecode ofObject: self receiver)
+	self push: (objectMemory fetchInstanceVariable: self fetchNextBytecode ofObject: self receiver)
 ]
 
 { #category : #bytecode }
@@ -221,7 +266,7 @@ WollokMLBytecodeInterpreter >> bytecodeSend [
 { #category : #bytecode }
 WollokMLBytecodeInterpreter >> bytecodeSendSuper [
 	
-	| literalIndex selector numberOfArguments receiver method |
+	| selector receiver method |
 	selector := self currentMethod selector.
 
 	receiver := self receiver.
@@ -234,10 +279,10 @@ WollokMLBytecodeInterpreter >> bytecodeSendSuper [
 { #category : #bytecode }
 WollokMLBytecodeInterpreter >> bytecodeThrow [
 	
-	| exception currentFrame currentIP |
+	| exception |
 	exception := self stackAt: 0.
-	[framePointer = -1 "At end"] whileFalse: [
-		(self frame: framePointer ip: programCounter handlesException: exception)
+	[localFP = -1 "At end"] whileFalse: [
+		(self frame: localFP ip: localIP handlesException: exception)
 			ifTrue: [ ^ self ].
 		self popFrame.		
 	].
@@ -246,12 +291,6 @@ WollokMLBytecodeInterpreter >> bytecodeThrow [
 	WollokError new
 		wollokException: exception;
 		signal
-]
-
-{ #category : #accessing }
-WollokMLBytecodeInterpreter >> classOf: anObject [
-	
-	^ memory classOf: anObject
 ]
 
 { #category : #compiling }
@@ -263,15 +302,15 @@ WollokMLBytecodeInterpreter >> compile: aString [
 { #category : #frames }
 WollokMLBytecodeInterpreter >> createFrameForMethod: aWKBytecodeProgram [
 
-	framePointer := stackPointer.
+	localFP := localSP.
 	self push: aWKBytecodeProgram.
-	programCounter := 1.
+	localIP := 1.
 ]
 
 { #category : #accessing }
 WollokMLBytecodeInterpreter >> currentMethod [
 	
-	^ stack at: framePointer
+	^ stack at: localFP
 ]
 
 { #category : #interpreting }
@@ -290,7 +329,7 @@ WollokMLBytecodeInterpreter >> executeNativeMethodFrom: aClassName selector: aSe
 		at: (self memory asPharoString: aSelector)
 		ifAbsent: [ self memory asPharoString: aSelector ].
 	
-	nativeName := ((aClassName copyReplaceAll: '.' with: '_'), '__', mapping) asSymbol.
+	nativeName := ((aClassName copyReplaceAll: '.' with: '_'), '__', mapping).
 	^ self perform: nativeName
 ]
 
@@ -311,7 +350,7 @@ WollokMLBytecodeInterpreter >> frame: aFramePointer ip: frameInstructionPointer 
 	method exceptionHandlers do: [ :e |
 		(e includesBytecode: frameInstructionPointer)
 			ifTrue: [
-				programCounter := e handlerStart.
+				localIP := e handlerStart.
 				^ true ] ].
 	^ false
 ]
@@ -389,12 +428,6 @@ WollokMLBytecodeInterpreter >> initializeStackAndInterpret [
 	self interpret
 ]
 
-{ #category : #instantiation }
-WollokMLBytecodeInterpreter >> instantiateClass: aWKBytecodeClass [
-
-	^ objectMemory instantiateClass: aWKBytecodeClass
-]
-
 { #category : #interpreting }
 WollokMLBytecodeInterpreter >> interpretLoop [
 	
@@ -412,7 +445,7 @@ WollokMLBytecodeInterpreter >> interpretProgram: bytecodes [
 { #category : #interpreting }
 WollokMLBytecodeInterpreter >> interpretUntilReturn: parentFrame [
 
-	[ framePointer > parentFrame ] whileTrue: [ 
+	[ localFP > parentFrame ] whileTrue: [ 
 		| bytecode |
 		bytecode := self fetchNextBytecode.
 		self dispatchBytecode: bytecode.
@@ -422,7 +455,7 @@ WollokMLBytecodeInterpreter >> interpretUntilReturn: parentFrame [
 { #category : #accessing }
 WollokMLBytecodeInterpreter >> literalAt: anInteger [ 
 	
-	^ self currentMethod literalAt: anInteger
+	^ self currentMethod methodLiteralAt: anInteger
 ]
 
 { #category : #'name-resolution' }
@@ -454,13 +487,13 @@ WollokMLBytecodeInterpreter >> load: bytecode [
 { #category : #lookup }
 WollokMLBytecodeInterpreter >> lookup: aString fromClass: aWollokClass [
 
-	^ aWollokClass lookup: (objectMemory asPharoString: aString) asSymbol
+	^ aWollokClass lookup: (objectMemory asPharoString: aString)
 ]
 
 { #category : #lookup }
 WollokMLBytecodeInterpreter >> lookup: aString withReceiver: aWollokObject [
 
-	^ (objectMemory classOf: aWollokObject) lookup: (self memory asPharoString: aString) asSymbol
+	^ (objectMemory classOf: aWollokObject) lookup: (self memory asPharoString: aString)
 ]
 
 { #category : #accessing }
@@ -487,24 +520,23 @@ WollokMLBytecodeInterpreter >> parse: aString [
 { #category : #'stack-access' }
 WollokMLBytecodeInterpreter >> pop [
 	
-	stackPointer := stackPointer - 1.
-	^ stack at: stackPointer
-	
+	localSP := localSP - 1.
+	^ stack at: localSP
 ]
 
 { #category : #'stack-access' }
 WollokMLBytecodeInterpreter >> pop: anInteger [
 	"pop a number of elements"
 	
-	stackPointer := stackPointer - anInteger
+	localSP := localSP - anInteger
 ]
 
 { #category : #bytecode }
 WollokMLBytecodeInterpreter >> popFrame [
 	
-	programCounter := self frameCallerIP: framePointer.
-	stackPointer := framePointer - 2.
-	framePointer := self frameCallerFP: framePointer.
+	localIP := self frameCallerIP: localFP.
+	localSP := localFP - 2.
+	localFP := self frameCallerFP: localFP.
 ]
 
 { #category : #accessing }
@@ -519,14 +551,14 @@ WollokMLBytecodeInterpreter >> push: aValue [
 	| sp |
 	<inline: true>
 	<var: #sp type: #'char *'>
-	stack longAt: (sp := stackPointer - objectMemory wordSize) put: aValue.
-	stackPointer := sp
+	stack longAt: (sp := localSP - objectMemory wordSize) put: aValue.
+	localSP := sp
 ]
 
 { #category : #accessing }
 WollokMLBytecodeInterpreter >> receiver [
 	
-	^ stack at: framePointer "Frame points to current frame"
+	^ stack at: localFP "Frame points to current frame"
 		- 2 "Skip saved frame pointer and saved instruction pointer"
 		- self currentMethod numberOfParameters "Skip parameters"
 		- 1 "Go back by 1 to get the receiver"
@@ -538,22 +570,16 @@ WollokMLBytecodeInterpreter >> registerGlobal: aWollokVMObject atName: aString [
 	bindings at: aString asSymbol put: aWollokVMObject
 ]
 
-{ #category : #'name-resolution' }
-WollokMLBytecodeInterpreter >> resolve: aString [
-	
-	^ loader loadName: aString.
-]
-
 { #category : #'stack-access' }
 WollokMLBytecodeInterpreter >> stackAt: anInteger [ 
 	
-	^ stack at: stackPointer - anInteger
+	^ stack at: localSP - anInteger
 ]
 
-{ #category : #accessing }
-WollokMLBytecodeInterpreter >> wollokClassName: anInteger [ 
+{ #category : #bytecode }
+WollokMLBytecodeInterpreter >> unknownBytecode [
 	
-	^ objectMemory wollokClassName: anInteger
+	"Do nothing"
 ]
 
 { #category : #'native methods' }

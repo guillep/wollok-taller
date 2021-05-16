@@ -11,6 +11,29 @@ Class {
 	#category : #'WollokVM-BytecodeInterpreter'
 }
 
+{ #category : #enumerating }
+WKBytecodeClass class >> filteredInstVarNames [
+	"Eliminate the obvious simulation-only inst vars"
+	^ super filteredInstVarNames copyWithoutAll: #(interpreter)
+]
+
+{ #category : #enumerating }
+WKBytecodeClass class >> instVarNamesAndTypesForTranslationDo: aBinaryBlock [
+	"enumerate aBinaryBlock with the names and C type strings for the inst vars to include in a BytecodeDescriptor struct."
+	self filteredInstVarNames do:
+		[:ivn|
+		aBinaryBlock
+			value: ivn
+			value: (ivn caseOf: {
+							[ 'literals'  		]			->	['sqInt *'].
+							[ 'methods'   		]			->	['WKBytecoeMethod *'].
+							[ 'superclass'		]			->	['WKBytecodeClass *'].
+							[ 'name'				]			->	['char *'].
+							[ 'numberOfSlots'	]			->	['sqInt'].
+						}
+						otherwise: [ 1halt ])]
+]
+
 { #category : #accessing }
 WKBytecodeClass >> addMethod: aWKBytecodeMethod [ 
 
@@ -55,11 +78,13 @@ WKBytecodeClass >> instantiate [
 
 { #category : #accessing }
 WKBytecodeClass >> interpreter [
+	<doNotGenerate>
 	^ interpreter
 ]
 
 { #category : #accessing }
 WKBytecodeClass >> interpreter: anObject [
+	<doNotGenerate>
 	interpreter := anObject
 ]
 
@@ -71,7 +96,7 @@ WKBytecodeClass >> lookup: aString [
 
 { #category : #accessing }
 WKBytecodeClass >> memory [
-	
+	<doNotGenerate>
 	^ interpreter memory
 ]
 

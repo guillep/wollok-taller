@@ -1,6 +1,6 @@
 Class {
 	#name : #WKBytecodeMethod,
-	#superclass : #Object,
+	#superclass : #VMStructType,
 	#instVars : [
 		'selector',
 		'isNative',
@@ -11,6 +11,24 @@ Class {
 	],
 	#category : #'WollokVM-BytecodeInterpreter'
 }
+
+{ #category : #translation }
+WKBytecodeMethod class >> instVarNamesAndTypesForTranslationDo: aBinaryBlock [
+	"enumerate aBinaryBlock with the names and C type strings for the inst vars to include in a BytecodeDescriptor struct."
+	self filteredInstVarNames do:
+		[:ivn|
+		aBinaryBlock
+			value: ivn
+			value: (ivn caseOf: {
+							[ 'selector'  		]			->	['char *'].
+							[ 'isNative'   		]			->	['bool'].
+							[ 'methodBytecode'		]			->	['byte*'].
+							[ 'numberOfParameters'				]			->	['int'].
+							[ 'bytecodeClass'	]			->	['VMBytecodeClass *'].
+							[ 'exceptionHandlers'	]			->	['void*'].
+						}
+						otherwise: [ 1halt ])]
+]
 
 { #category : #accessing }
 WKBytecodeMethod >> bytecode [
@@ -50,15 +68,15 @@ WKBytecodeMethod >> isNative: anObject [
 ]
 
 { #category : #accessing }
-WKBytecodeMethod >> literalAt: anInteger [
-	
-	^ bytecodeClass literalAt: anInteger
-]
-
-{ #category : #accessing }
 WKBytecodeMethod >> methodBytecode: bytecode [ 
 	
 	methodBytecode := bytecode
+]
+
+{ #category : #accessing }
+WKBytecodeMethod >> methodLiteralAt: anInteger [
+	
+	^ bytecodeClass classLiteralAt: anInteger
 ]
 
 { #category : #accessing }
