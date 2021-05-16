@@ -69,6 +69,10 @@ WollokMLBytecodeInterpreter class >> declareCVarsIn: aCCodeGenerator [
 	aCCodeGenerator var: #localIP type: #'char *'.
 	aCCodeGenerator var: #localFP type: #'char *'.
 	aCCodeGenerator var: #localSP type: #'char *'.
+	
+	aCCodeGenerator
+		addHeaderFile:'"dispdbg.h"';
+		addHeaderFile:'"interp.h"'
 ]
 
 { #category : #accessing }
@@ -102,11 +106,30 @@ WollokMLBytecodeInterpreter class >> prepareToBeAddedToCodeGenerator: aCodeGen [
 	aCodeGen retainMethods: #(interpret)
 ]
 
+{ #category : #writing }
+WollokMLBytecodeInterpreter class >> writeVMHeaderTo: aStream bytesPerWord: bytesPerWord generator: aCCodeGenerator [
+	super writeVMHeaderTo: aStream bytesPerWord: bytesPerWord generator: aCCodeGenerator.
+	
+	"Generate the contents of interp.h on aStream.  Specific Interpreter subclasses
+	 override to add more stuff."
+
+	"The most basic constants must be defined here, not in e.g. the plugin sources, to allow those
+	 other sources to be shared between different builds (Spur vs SqueakV3, 32-bit vs 64-bit, etc)"
+	self constantClass mostBasicConstantNames asSet sorted do:
+		[:constName|
+		(self constantClass classPool at: constName ifAbsent: []) ifNotNil:
+			[:const| aCCodeGenerator putDefineOf: constName as: const on: aStream]]
+]
+
 { #category : #activation }
 WollokMLBytecodeInterpreter >> activateMethod: aWKBytecodeMethod [ 
 
-	aWKBytecodeMethod isNative ifTrue: [ | className |
-		className := aWKBytecodeMethod bytecodeClass name.
+	<var: 'aWKBytecodeMethod' type: 'WKBytecodeMethod *'>
+	<var: 'class' type: 'WKBytecodeClass *'>
+
+	aWKBytecodeMethod isNative ifTrue: [ | class className |
+		class := aWKBytecodeMethod bytecodeClass.
+		className := class className.
 		^ self executeNativeMethodFrom: className selector: aWKBytecodeMethod selector ].
 	
 	self push: localFP.
@@ -312,11 +335,11 @@ WollokMLBytecodeInterpreter >> compile: aString [
 ]
 
 { #category : #frames }
-WollokMLBytecodeInterpreter >> createFrameForMethod: aWKBytecodeProgram [
+WollokMLBytecodeInterpreter >> createFrameForMethod: aWKBytecodeMethod [
 
 	localFP := localSP.
-	self push: aWKBytecodeProgram.
-	localIP := 1.
+	self push: aWKBytecodeMethod.
+	localIP := aWKBytecodeMethod methodBytecode.
 ]
 
 { #category : #accessing }
@@ -520,7 +543,7 @@ WollokMLBytecodeInterpreter >> parse: aString [
 WollokMLBytecodeInterpreter >> pop [
 	
 	localSP := localSP - 1.
-	^ stack at: localSP
+	^ objectMemory longAt: localSP
 ]
 
 { #category : #'stack-access' }
@@ -550,7 +573,7 @@ WollokMLBytecodeInterpreter >> push: aValue [
 	| sp |
 	<inline: true>
 	<var: #sp type: #'char *'>
-	stack longAt: (sp := localSP - objectMemory wordSize) put: aValue.
+	objectMemory longAt: (sp := localSP - objectMemory wordSize) put: aValue.
 	localSP := sp
 ]
 
@@ -571,8 +594,9 @@ WollokMLBytecodeInterpreter >> registerGlobal: aWollokVMObject atName: aString [
 
 { #category : #'stack-access' }
 WollokMLBytecodeInterpreter >> stackAt: anInteger [ 
-	
-	^ stack at: localSP - anInteger
+
+	^ objectMemory longAt: (localSP + (objectMemory wordSize * anInteger))
+	"^ stack at: localSP - anInteger"
 ]
 
 { #category : #bytecode }

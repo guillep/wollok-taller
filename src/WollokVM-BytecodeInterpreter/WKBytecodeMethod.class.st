@@ -22,9 +22,9 @@ WKBytecodeMethod class >> instVarNamesAndTypesForTranslationDo: aBinaryBlock [
 			value: (ivn caseOf: {
 							[ 'selector'  		]			->	['char *'].
 							[ 'isNative'   		]			->	['bool'].
-							[ 'methodBytecode'		]			->	['uint8_t *'].
+							[ 'methodBytecode'		]			->	['char *'].
 							[ 'numberOfParameters'				]			->	['int'].
-							[ 'bytecodeClass'	]			->	['struct _VMBytecodeClass *'].
+							[ 'bytecodeClass'	]			->	['struct _WKBytecodeClass *'].
 							[ 'exceptionHandlers'	]			->	['void*'].
 						}
 						otherwise: [ 1halt ])]

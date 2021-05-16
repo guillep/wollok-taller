@@ -147,6 +147,7 @@ WKSemispaceMemory >> byteAt: address put: aValue [
 { #category : #accessing }
 WKSemispaceMemory >> classOf: anOop [
 	
+	<returnTypeC: 'WKBytecodeClass *'>
 	| classIndex |
 	classIndex := self slotAt: anOop.
 	^ classTable at: classIndex
@@ -294,6 +295,14 @@ WKSemispaceMemory >> isNull: anInteger [
 	^ anInteger = 0
 ]
 
+{ #category : #'memory-access' }
+WKSemispaceMemory >> longAt: address [ 
+	"Check allignment"
+	<doNotGenerate>
+	self assert: address \\ 8 = 0.
+	^ memory integerAt: address + 1 size: 8 signed: false
+]
+
 { #category : #accessing }
 WKSemispaceMemory >> nullObject [
 	^ nullObject
@@ -365,10 +374,8 @@ WKSemispaceMemory >> scanObject: oop [
 
 { #category : #'memory-access' }
 WKSemispaceMemory >> slotAt: address [ 
-	"Check allignment"
-	<doNotGenerate>
-	self assert: address \\ 8 = 0.
-	^ memory integerAt: address + 1 size: 8 signed: false
+	
+	^ self longAt: address
 ]
 
 { #category : #'memory-access' }

@@ -46,6 +46,19 @@ WKBytecodeClass >> allVariables [
 	^ #()
 ]
 
+{ #category : #accessing }
+WKBytecodeClass >> classLiteralAt: anInteger [
+
+	^ literals at: anInteger
+]
+
+{ #category : #accessing }
+WKBytecodeClass >> className [
+	"Had to rename this from name to className because otherwise it got translated wrong??"
+	self flag: #'WHAT?'.
+	^ name
+]
+
 { #category : #decoding }
 WKBytecodeClass >> decodeFrom: aReadStream [ 
 	
