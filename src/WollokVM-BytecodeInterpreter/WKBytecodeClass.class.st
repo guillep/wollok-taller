@@ -26,8 +26,8 @@ WKBytecodeClass class >> instVarNamesAndTypesForTranslationDo: aBinaryBlock [
 			value: ivn
 			value: (ivn caseOf: {
 							[ 'literals'  		]			->	['sqInt *'].
-							[ 'methods'   		]			->	['WKBytecoeMethod *'].
-							[ 'superclass'		]			->	['WKBytecodeClass *'].
+							[ 'methods'   		]			->	['WKBytecodeMethod *'].
+							[ 'superclass'		]			->	['struct _WKBytecodeClass *'].
 							[ 'name'				]			->	['char *'].
 							[ 'numberOfSlots'	]			->	['sqInt'].
 						}

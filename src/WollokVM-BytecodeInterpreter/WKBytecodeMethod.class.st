@@ -22,18 +22,12 @@ WKBytecodeMethod class >> instVarNamesAndTypesForTranslationDo: aBinaryBlock [
 			value: (ivn caseOf: {
 							[ 'selector'  		]			->	['char *'].
 							[ 'isNative'   		]			->	['bool'].
-							[ 'methodBytecode'		]			->	['byte*'].
+							[ 'methodBytecode'		]			->	['uint8_t *'].
 							[ 'numberOfParameters'				]			->	['int'].
-							[ 'bytecodeClass'	]			->	['VMBytecodeClass *'].
+							[ 'bytecodeClass'	]			->	['struct _VMBytecodeClass *'].
 							[ 'exceptionHandlers'	]			->	['void*'].
 						}
 						otherwise: [ 1halt ])]
-]
-
-{ #category : #accessing }
-WKBytecodeMethod >> bytecode [
-	
-	^ methodBytecode
 ]
 
 { #category : #accessing }
@@ -68,9 +62,9 @@ WKBytecodeMethod >> isNative: anObject [
 ]
 
 { #category : #accessing }
-WKBytecodeMethod >> methodBytecode: bytecode [ 
+WKBytecodeMethod >> methodBytecode [
 	
-	methodBytecode := bytecode
+	^ methodBytecode
 ]
 
 { #category : #accessing }
@@ -99,4 +93,10 @@ WKBytecodeMethod >> selector [
 WKBytecodeMethod >> selector: anObject [
 
 	selector := anObject
+]
+
+{ #category : #accessing }
+WKBytecodeMethod >> setMethodBytecode: bytecode [ 
+	
+	methodBytecode := bytecode
 ]
